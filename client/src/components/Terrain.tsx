@@ -17,13 +17,13 @@ export function Terrain() {
   const tileSize = 1;
   const tileSpacing = 0.02;
 
-  const octagonShape = useMemo(() => {
+  const hexagonShape = useMemo(() => {
     const shape = new THREE.Shape();
     const radius = tileSize / 2;
-    const sides = 8;
+    const sides = 6;
     
     for (let i = 0; i < sides; i++) {
-      const angle = (i / sides) * Math.PI * 2;
+      const angle = (i / sides) * Math.PI * 2 + Math.PI / 6;
       const x = Math.cos(angle) * radius;
       const y = Math.sin(angle) * radius;
       
@@ -37,6 +37,18 @@ export function Terrain() {
     
     return shape;
   }, [tileSize]);
+
+  const tileColors = useMemo(() => {
+    const grayShades = ['#8a9ba8', '#9ba8b2', '#aab5be', '#b5bec5', '#c5ccd1', '#999999', '#aaaaaa', '#bbbbbb'];
+    const colors: string[][] = [];
+    for (let y = 0; y < gridSize; y++) {
+      colors[y] = [];
+      for (let x = 0; x < gridSize; x++) {
+        colors[y][x] = grayShades[Math.floor(Math.random() * grayShades.length)];
+      }
+    }
+    return colors;
+  }, [gridSize]);
 
   const darkenColor = (color: string, factor: number = 0.8) => {
     const hex = color.replace('#', '');
@@ -91,20 +103,31 @@ export function Terrain() {
     <group>
       {tiles.map((row, y) =>
         row.map((tile, x) => {
-          const posX = (x - gridSize / 2) * (tileSize + tileSpacing);
-          const posZ = (y - gridSize / 2) * (tileSize + tileSpacing);
+          const radius = tileSize / 2;
+          const hexWidth = 2 * radius;
+          const hexHeight = radius * Math.sqrt(3);
           
-          let borderColor = "#3a3a3a";
+          const horizontalSpacing = hexWidth * 0.75;
+          const verticalSpacing = hexHeight;
+          
+          const colOffset = (x % 2) * (verticalSpacing / 2);
+          
+          const posX = (x - gridSize / 2) * horizontalSpacing;
+          const posZ = (y - gridSize / 2) * verticalSpacing + colOffset;
+          
+          let borderColor = "#4a4a4a";
+          let baseColor = tileColors[y][x];
           
           if (tile.isHighlighted) {
             if (tile.highlightType === "move") {
               borderColor = "#4a9eff";
+              baseColor = "#2a5f9f";
             } else if (tile.highlightType === "attack") {
               borderColor = "#ff4a4a";
+              baseColor = "#9f2a2a";
             }
           }
           
-          const backgroundColor = darkenColor(borderColor, 0.8);
           const isSelected = selectedTile?.x === x && selectedTile?.y === y;
           
           return (
@@ -115,9 +138,9 @@ export function Terrain() {
                 onPointerOver={() => handleTileHover(x, y, true)}
                 onPointerOut={() => handleTileHover(x, y, false)}
               >
-                <shapeGeometry args={[octagonShape]} />
+                <shapeGeometry args={[hexagonShape]} />
                 <meshStandardMaterial
-                  color={backgroundColor}
+                  color={baseColor}
                   emissive={isSelected ? "#ffffff" : "#000000"}
                   emissiveIntensity={isSelected ? 0.2 : 0}
                   metalness={0.1}
@@ -129,16 +152,14 @@ export function Terrain() {
                 <bufferGeometry>
                   <bufferAttribute
                     attach="attributes-position"
-                    count={8}
+                    count={6}
                     array={new Float32Array([
-                      Math.cos(0 * Math.PI / 4) * (tileSize / 2), Math.sin(0 * Math.PI / 4) * (tileSize / 2), 0,
-                      Math.cos(1 * Math.PI / 4) * (tileSize / 2), Math.sin(1 * Math.PI / 4) * (tileSize / 2), 0,
-                      Math.cos(2 * Math.PI / 4) * (tileSize / 2), Math.sin(2 * Math.PI / 4) * (tileSize / 2), 0,
-                      Math.cos(3 * Math.PI / 4) * (tileSize / 2), Math.sin(3 * Math.PI / 4) * (tileSize / 2), 0,
-                      Math.cos(4 * Math.PI / 4) * (tileSize / 2), Math.sin(4 * Math.PI / 4) * (tileSize / 2), 0,
-                      Math.cos(5 * Math.PI / 4) * (tileSize / 2), Math.sin(5 * Math.PI / 4) * (tileSize / 2), 0,
-                      Math.cos(6 * Math.PI / 4) * (tileSize / 2), Math.sin(6 * Math.PI / 4) * (tileSize / 2), 0,
-                      Math.cos(7 * Math.PI / 4) * (tileSize / 2), Math.sin(7 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(0 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(0 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
+                      Math.cos(1 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(1 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
+                      Math.cos(2 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(2 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
+                      Math.cos(3 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(3 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
+                      Math.cos(4 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(4 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
+                      Math.cos(5 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(5 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
                     ])}
                     itemSize={3}
                   />
@@ -146,7 +167,7 @@ export function Terrain() {
                 <lineBasicMaterial
                   color={borderColor}
                   linewidth={2}
-                  opacity={tile.isHighlighted ? 1 : 0.6}
+                  opacity={tile.isHighlighted ? 1 : 0.5}
                   transparent
                 />
               </lineLoop>
