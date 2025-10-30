@@ -10,6 +10,12 @@ import { useGameStore } from "@/lib/stores/useGameStore";
 
 function Scene() {
   const collectibles = useGameStore((state) => state.collectibles);
+  const tiles = useGameStore((state) => state.tiles);
+  
+  const visibleCollectibles = collectibles.filter(collectible => {
+    const tile = tiles[collectible.position.y]?.[collectible.position.x];
+    return tile && tile.isExplored;
+  });
   
   return (
     <>
@@ -19,7 +25,7 @@ function Scene() {
       
       <Terrain />
       <Player />
-      {collectibles.map((collectible) => (
+      {visibleCollectibles.map((collectible) => (
         <Collectible key={collectible.id} collectible={collectible} />
       ))}
       
