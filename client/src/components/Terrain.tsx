@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useGameStore } from "@/lib/stores/useGameStore";
+import { useGameStore, type Tile } from "@/lib/stores/useGameStore";
 import * as THREE from "three";
 
 export function Terrain() {
@@ -61,15 +61,22 @@ export function Terrain() {
     }
   };
 
+  const visibleTiles = useMemo(() => {
+    const visible: Array<{tile: Tile, x: number, y: number}> = [];
+    tiles.forEach((row, y) => {
+      row.forEach((tile, x) => {
+        const distanceToPlayer = Math.abs(x - player.position.x) + Math.abs(y - player.position.y);
+        if (distanceToPlayer <= 8) {
+          visible.push({ tile, x, y });
+        }
+      });
+    });
+    return visible;
+  }, [tiles, player.position.x, player.position.y]);
+
   return (
     <group>
-      {tiles.map((row, y) =>
-        row.map((tile, x) => {
-          const distanceToPlayer = Math.abs(x - player.position.x) + Math.abs(y - player.position.y);
-          if (distanceToPlayer > 8) {
-            return null;
-          }
-          
+      {visibleTiles.map(({ tile, x, y }) => {
           const posX = (x - gridSize / 2) * (tileSize + tileSpacing);
           const posZ = (y - gridSize / 2) * (tileSize + tileSpacing);
           
@@ -125,8 +132,7 @@ export function Terrain() {
               </lineLoop>
             </group>
           );
-        })
-      )}
+      })}
       
       <gridHelper
         args={[gridSize * (tileSize + tileSpacing), gridSize, "#222222", "#0a0a0a"]}
