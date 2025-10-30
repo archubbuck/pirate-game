@@ -3,9 +3,13 @@ import { Terrain } from "./Terrain";
 import { Player } from "./Player";
 import { Collectible } from "./Collectible";
 import { MovementController } from "./MovementController";
+import { MagnetEffect } from "./MagnetEffect";
 import { CameraFollowPlayer } from "./CameraFollowPlayer";
 import { DynamicLight } from "./DynamicLight";
 import { HUD } from "./HUD";
+import { Inventory } from "./Inventory";
+import { Shop } from "./Shop";
+import { KeyboardListener } from "./KeyboardListener";
 import { useGameStore } from "@/lib/stores/useGameStore";
 
 function Scene() {
@@ -30,6 +34,7 @@ function Scene() {
       ))}
       
       <MovementController />
+      <MagnetEffect />
       <CameraFollowPlayer />
     </>
   );
@@ -56,6 +61,9 @@ export function Game() {
       </Canvas>
       
       <HUD />
+      <Inventory />
+      <Shop />
+      <KeyboardListener />
     </div>
   );
 }

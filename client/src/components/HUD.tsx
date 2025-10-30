@@ -7,10 +7,26 @@ export function HUD() {
   const collectibles = useGameStore((state) => state.collectibles);
   const start = useGameStore((state) => state.start);
   const restart = useGameStore((state) => state.restart);
+  const activePowerUps = useGameStore((state) => state.activePowerUps);
+  const getCurrency = useGameStore((state) => state.getCurrency);
   const isMuted = useAudio((state) => state.isMuted);
   const toggleMute = useAudio((state) => state.toggleMute);
   
   const totalCollectibles = collectedCount + collectibles.length;
+  const currency = getCurrency();
+  const totalCurrency = Object.values(currency).reduce((sum, count) => sum + count, 0);
+  
+  const powerUpIcons: Record<string, string> = {
+    speed: "⚡",
+    vision: "👁️",
+    magnet: "🧲",
+  };
+  
+  const powerUpNames: Record<string, string> = {
+    speed: "Speed Boost",
+    vision: "Enhanced Vision",
+    magnet: "Item Magnet",
+  };
   
   return (
     <>
@@ -26,9 +42,10 @@ export function HUD() {
               <h3 className="text-white font-bold mb-2">How to Play:</h3>
               <ul className="text-gray-300 space-y-1">
                 <li>• Click any tile to move there</li>
-                <li>• Your character will find the path automatically</li>
                 <li>• Explore the map to reveal hidden areas</li>
-                <li>• Collect all glowing treasures to win!</li>
+                <li>• Collect glowing treasures as currency</li>
+                <li>• Press <span className="text-blue-400 font-bold">I</span> to view inventory</li>
+                <li>• Press <span className="text-yellow-400 font-bold">U</span> to buy power-ups & unlocks</li>
               </ul>
             </div>
             
@@ -90,15 +107,43 @@ export function HUD() {
               <p className="text-gray-400 text-xs mb-1">Remaining</p>
               <p className="text-white text-3xl font-bold text-yellow-400">{collectibles.length}</p>
             </div>
+            
+            {totalCurrency > 0 && (
+              <div className="mt-3 bg-gray-800 rounded p-3 text-center border border-yellow-500/30">
+                <p className="text-gray-400 text-xs mb-1">Currency</p>
+                <p className="text-white text-2xl font-bold text-yellow-400">{totalCurrency}</p>
+              </div>
+            )}
+            
+            {activePowerUps.length > 0 && (
+              <div className="mt-3">
+                <p className="text-white font-bold text-sm mb-2">Active Power-Ups:</p>
+                <div className="space-y-2">
+                  {activePowerUps.map((powerUp) => (
+                    <div
+                      key={powerUp.type}
+                      className="bg-green-900/40 border border-green-500/50 rounded p-2 flex items-center gap-2"
+                    >
+                      <span className="text-lg">{powerUpIcons[powerUp.type]}</span>
+                      <span className="text-white text-xs flex-1">{powerUpNames[powerUp.type]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
-          <div className="absolute bottom-4 left-4">
+          <div className="absolute bottom-4 left-4 flex gap-2">
             <button
               onClick={toggleMute}
               className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               {isMuted ? "🔇 Unmute" : "🔊 Mute"}
             </button>
+            <div className="bg-gray-900/90 border border-gray-700 text-white px-4 py-2 rounded-lg flex gap-4 text-sm">
+              <span className="text-gray-400">Press <span className="text-blue-400 font-bold">I</span> for Inventory</span>
+              <span className="text-gray-400">Press <span className="text-yellow-400 font-bold">U</span> for Shop</span>
+            </div>
           </div>
           
           <div className="absolute bottom-4 right-4">

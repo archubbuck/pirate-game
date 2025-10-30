@@ -114,9 +114,12 @@ export function MovementController() {
   const setTargetPosition = useGameStore((state) => state.setTargetPosition);
   const highlightPath = useGameStore((state) => state.highlightPath);
   const clearHighlights = useGameStore((state) => state.clearHighlights);
+  const activePowerUps = useGameStore((state) => state.activePowerUps);
   
   const movementProgress = useRef(0);
-  const moveSpeed = 3;
+  const baseSpeed = 3;
+  const hasSpeedBoost = activePowerUps.some(p => p.type === "speed");
+  const moveSpeed = hasSpeedBoost ? baseSpeed * 1.5 : baseSpeed;
   
   useEffect(() => {
     if (targetPosition && !isMoving) {
