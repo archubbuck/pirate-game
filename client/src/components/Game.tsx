@@ -39,8 +39,8 @@ function Scene() {
         enableZoom={true}
         minDistance={10}
         maxDistance={30}
-        maxPolarAngle={Math.PI / 2.5}
-        minPolarAngle={Math.PI / 6}
+        maxPolarAngle={Math.PI / 3}
+        minPolarAngle={Math.PI / 3}
       />
     </>
   );
