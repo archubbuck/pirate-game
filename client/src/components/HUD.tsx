@@ -87,71 +87,44 @@ export function HUD() {
       
       {phase === "playing" && (
         <>
-          <div className="absolute top-4 left-4 bg-gray-900/90 border border-gray-700 rounded-lg p-4 min-w-64">
-            <h2 className="text-white font-bold mb-3 text-lg">Collection Progress</h2>
-            
-            <div className="mb-3">
-              <div className="flex justify-between text-xs text-gray-300 mb-1">
-                <span>Items Found</span>
-                <span>{collectedCount} / {totalCollectibles}</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all"
-                  style={{ width: `${(collectedCount / totalCollectibles) * 100}%` }}
-                />
-              </div>
+          <div className="absolute top-2 left-2 bg-gray-900/90 border border-gray-700 rounded-lg p-2 text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-gray-400">Items:</span>
+              <span className="text-white font-bold">{collectedCount}/{totalCollectibles}</span>
+              {totalCurrency > 0 && (
+                <>
+                  <span className="text-gray-600">|</span>
+                  <span className="text-yellow-400 font-bold">💰 {totalCurrency}</span>
+                </>
+              )}
             </div>
-            
-            <div className="bg-gray-800 rounded p-3 text-center">
-              <p className="text-gray-400 text-xs mb-1">Remaining</p>
-              <p className="text-white text-3xl font-bold text-yellow-400">{collectibles.length}</p>
-            </div>
-            
-            {totalCurrency > 0 && (
-              <div className="mt-3 bg-gray-800 rounded p-3 text-center border border-yellow-500/30">
-                <p className="text-gray-400 text-xs mb-1">Currency</p>
-                <p className="text-white text-2xl font-bold text-yellow-400">{totalCurrency}</p>
-              </div>
-            )}
             
             {activePowerUps.length > 0 && (
-              <div className="mt-3">
-                <p className="text-white font-bold text-sm mb-2">Active Power-Ups:</p>
-                <div className="space-y-2">
-                  {activePowerUps.map((powerUp) => (
-                    <div
-                      key={powerUp.type}
-                      className="bg-green-900/40 border border-green-500/50 rounded p-2 flex items-center gap-2"
-                    >
-                      <span className="text-lg">{powerUpIcons[powerUp.type]}</span>
-                      <span className="text-white text-xs flex-1">{powerUpNames[powerUp.type]}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex gap-1 flex-wrap">
+                {activePowerUps.map((powerUp) => (
+                  <span
+                    key={powerUp.type}
+                    className="bg-green-900/40 border border-green-500/50 rounded px-1.5 py-0.5 text-xs"
+                  >
+                    {powerUpIcons[powerUp.type]}
+                  </span>
+                ))}
               </div>
             )}
           </div>
           
-          <div className="absolute bottom-4 left-4 flex gap-2">
+          <div className="absolute bottom-2 left-2 flex gap-1">
             <button
               onClick={toggleMute}
-              className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-2 py-1 rounded text-sm transition-colors"
             >
-              {isMuted ? "🔇 Unmute" : "🔊 Mute"}
+              {isMuted ? "🔇" : "🔊"}
             </button>
-            <div className="bg-gray-900/90 border border-gray-700 text-white px-4 py-2 rounded-lg flex gap-4 text-sm">
-              <span className="text-gray-400">Press <span className="text-blue-400 font-bold">I</span> for Inventory</span>
-              <span className="text-gray-400">Press <span className="text-yellow-400 font-bold">U</span> for Shop</span>
-            </div>
-          </div>
-          
-          <div className="absolute bottom-4 right-4">
             <button
               onClick={restart}
-              className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-2 py-1 rounded text-sm transition-colors"
             >
-              Restart
+              ↻
             </button>
           </div>
         </>

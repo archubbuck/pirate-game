@@ -12,26 +12,22 @@ export function MobileControls() {
   const totalCurrency = Object.values(currency).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+    <div className="absolute top-2 right-2 flex gap-1 z-20">
       <button
         onClick={toggleInventory}
-        className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-colors flex items-center gap-2 min-w-[120px]"
+        className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 px-3 rounded shadow-lg transition-colors text-sm"
       >
-        <span className="text-xl">🎒</span>
-        <span>Inventory</span>
+        🎒
       </button>
       
       <button
         onClick={toggleShop}
-        className="bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-colors flex items-center gap-2 min-w-[120px]"
+        className="bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white font-bold py-2 px-3 rounded shadow-lg transition-colors flex items-center gap-1 text-sm"
       >
-        <span className="text-xl">🛒</span>
-        <div className="flex flex-col items-start">
-          <span>Shop</span>
-          {totalCurrency > 0 && (
-            <span className="text-xs opacity-90">{totalCurrency} items</span>
-          )}
-        </div>
+        <span>🛒</span>
+        {totalCurrency > 0 && (
+          <span className="text-xs">{totalCurrency}</span>
+        )}
       </button>
     </div>
   );
