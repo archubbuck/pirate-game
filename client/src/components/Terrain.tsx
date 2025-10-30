@@ -17,13 +17,13 @@ export function Terrain() {
   const tileSize = 1;
   const tileSpacing = 0.02;
 
-  const hexagonShape = useMemo(() => {
+  const octagonShape = useMemo(() => {
     const shape = new THREE.Shape();
-    const radius = tileSize / 2;
-    const sides = 6;
+    const radius = tileSize / (2 * Math.cos(Math.PI / 8));
+    const sides = 8;
     
     for (let i = 0; i < sides; i++) {
-      const angle = (i / sides) * Math.PI * 2 + Math.PI / 6;
+      const angle = (i / sides) * Math.PI * 2 + Math.PI / 8;
       const x = Math.cos(angle) * radius;
       const y = Math.sin(angle) * radius;
       
@@ -103,17 +103,8 @@ export function Terrain() {
     <group>
       {tiles.map((row, y) =>
         row.map((tile, x) => {
-          const radius = tileSize / 2;
-          const hexWidth = 2 * radius;
-          const hexHeight = radius * Math.sqrt(3);
-          
-          const horizontalSpacing = (hexWidth * 0.75) + tileSpacing;
-          const verticalSpacing = hexHeight + tileSpacing;
-          
-          const colOffset = (x % 2) * (verticalSpacing / 2);
-          
-          const posX = (x - gridSize / 2) * horizontalSpacing;
-          const posZ = (y - gridSize / 2) * verticalSpacing + colOffset;
+          const posX = (x - gridSize / 2) * (tileSize + tileSpacing);
+          const posZ = (y - gridSize / 2) * (tileSize + tileSpacing);
           
           let borderColor = "#4a4a4a";
           let baseColor = tileColors[y][x];
@@ -138,7 +129,7 @@ export function Terrain() {
                 onPointerOver={() => handleTileHover(x, y, true)}
                 onPointerOut={() => handleTileHover(x, y, false)}
               >
-                <shapeGeometry args={[hexagonShape]} />
+                <shapeGeometry args={[octagonShape]} />
                 <meshStandardMaterial
                   color={baseColor}
                   emissive={isSelected ? "#ffffff" : "#000000"}
@@ -152,14 +143,16 @@ export function Terrain() {
                 <bufferGeometry>
                   <bufferAttribute
                     attach="attributes-position"
-                    count={6}
+                    count={8}
                     array={new Float32Array([
-                      Math.cos(0 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(0 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
-                      Math.cos(1 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(1 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
-                      Math.cos(2 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(2 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
-                      Math.cos(3 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(3 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
-                      Math.cos(4 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(4 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
-                      Math.cos(5 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), Math.sin(5 * Math.PI / 3 + Math.PI / 6) * (tileSize / 2), 0,
+                      Math.cos(0 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(0 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
+                      Math.cos(1 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(1 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
+                      Math.cos(2 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(2 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
+                      Math.cos(3 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(3 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
+                      Math.cos(4 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(4 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
+                      Math.cos(5 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(5 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
+                      Math.cos(6 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(6 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
+                      Math.cos(7 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), Math.sin(7 * Math.PI / 4 + Math.PI / 8) * (tileSize / (2 * Math.cos(Math.PI / 8))), 0,
                     ])}
                     itemSize={3}
                   />
