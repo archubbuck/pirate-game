@@ -107,8 +107,8 @@ export function Terrain() {
           const hexWidth = 2 * radius;
           const hexHeight = radius * Math.sqrt(3);
           
-          const horizontalSpacing = hexWidth * 0.75;
-          const verticalSpacing = hexHeight;
+          const horizontalSpacing = (hexWidth * 0.75) + tileSpacing;
+          const verticalSpacing = hexHeight + tileSpacing;
           
           const colOffset = (x % 2) * (verticalSpacing / 2);
           
