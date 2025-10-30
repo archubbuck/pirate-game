@@ -10,6 +10,7 @@ import { HUD } from "./HUD";
 import { Inventory } from "./Inventory";
 import { Shop } from "./Shop";
 import { KeyboardListener } from "./KeyboardListener";
+import { MobileControls } from "./MobileControls";
 import { useGameStore } from "@/lib/stores/useGameStore";
 
 function Scene() {
@@ -64,6 +65,7 @@ export function Game() {
       <Inventory />
       <Shop />
       <KeyboardListener />
+      <MobileControls />
     </div>
   );
 }

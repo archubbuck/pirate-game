@@ -37,24 +37,37 @@ export function Shop() {
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "600px",
-        maxWidth: "90vw",
-        maxHeight: "80vh",
-        backgroundColor: "rgba(20, 20, 30, 0.95)",
-        border: "2px solid #fbbf24",
-        borderRadius: "12px",
-        padding: "24px",
-        zIndex: 1000,
-        color: "#ffffff",
-        overflowY: "auto",
-      }}
-    >
+    <>
+      <div
+        onClick={toggleShop}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          zIndex: 999,
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "600px",
+          maxWidth: "90vw",
+          maxHeight: "85vh",
+          backgroundColor: "rgba(20, 20, 30, 0.98)",
+          border: "2px solid #fbbf24",
+          borderRadius: "12px",
+          padding: "24px",
+          zIndex: 1000,
+          color: "#ffffff",
+          overflowY: "auto",
+        }}
+      >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>Shop & Upgrades</h2>
         <button
@@ -175,8 +188,9 @@ export function Shop() {
       </div>
 
       <div style={{ marginTop: "20px", paddingTop: "20px", borderTop: "1px solid #444", textAlign: "center", color: "#888", fontSize: "14px" }}>
-        Press <span style={{ color: "#fbbf24", fontWeight: "bold" }}>U</span> to close
+        Press <span style={{ color: "#fbbf24", fontWeight: "bold" }}>U</span> or tap outside to close
       </div>
     </div>
+    </>
   );
 }
