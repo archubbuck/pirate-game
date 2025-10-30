@@ -39,7 +39,7 @@ interface FightSimulatorState {
   phase: GamePhase;
   currentTurn: number;
   isPlayerTurn: boolean;
-  tickProgress: number;
+  npcThinkingDelay: number;
   
   player: Entity;
   enemies: Entity[];
@@ -50,7 +50,6 @@ interface FightSimulatorState {
   hoveredTile: Position | null;
   
   gridSize: number;
-  tickDuration: number;
   
   start: () => void;
   restart: () => void;
@@ -59,9 +58,8 @@ interface FightSimulatorState {
   moveEntity: (entityId: string, position: Position) => void;
   attackEntity: (attackerId: string, targetId: string) => void;
   
-  updateCooldowns: () => void;
-  processTick: () => void;
-  processEnemyAI: () => void;
+  endPlayerTurn: () => void;
+  processNPCTurn: () => void;
   
   highlightTiles: (type: "move" | "attack" | "none", positions: Position[]) => void;
   clearHighlights: () => void;
@@ -74,7 +72,10 @@ interface FightSimulatorState {
 }
 
 const GRID_SIZE = 15;
-const TICK_DURATION = 600;
+
+const getRandomNPCDelay = () => {
+  return Math.floor(Math.random() * (2000 - 500 + 1)) + 500;
+};
 
 const createInitialTiles = (): Tile[][] => {
   const tiles: Tile[][] = [];
@@ -135,7 +136,7 @@ export const useFightSimulator = create<FightSimulatorState>()(
     phase: "ready",
     currentTurn: 0,
     isPlayerTurn: true,
-    tickProgress: 0,
+    npcThinkingDelay: 0,
     
     player: createInitialPlayer(),
     enemies: createInitialEnemies(),
@@ -151,11 +152,10 @@ export const useFightSimulator = create<FightSimulatorState>()(
     hoveredTile: null,
     
     gridSize: GRID_SIZE,
-    tickDuration: TICK_DURATION,
     
     start: () => {
-      set({ phase: "playing", currentTurn: 0 });
-      console.log("Game started");
+      set({ phase: "playing", currentTurn: 0, isPlayerTurn: true });
+      console.log("Game started - Player's turn");
     },
     
     restart: () => {
@@ -163,7 +163,7 @@ export const useFightSimulator = create<FightSimulatorState>()(
         phase: "ready",
         currentTurn: 0,
         isPlayerTurn: true,
-        tickProgress: 0,
+        npcThinkingDelay: 0,
         player: createInitialPlayer(),
         enemies: createInitialEnemies(),
         tiles: createInitialTiles(),
@@ -208,9 +208,14 @@ export const useFightSimulator = create<FightSimulatorState>()(
     },
     
     moveEntity: (entityId: string, position: Position) => {
-      const { player, enemies, stats } = get();
+      const { player, enemies, isPlayerTurn } = get();
       
       if (entityId === "player") {
+        if (!isPlayerTurn) {
+          console.log("Not player's turn");
+          return;
+        }
+        
         if (player.moveCooldown > 0) {
           console.log("Move on cooldown");
           return;
@@ -231,6 +236,11 @@ export const useFightSimulator = create<FightSimulatorState>()(
         });
         
         console.log(`Player moved to (${position.x}, ${position.y})`);
+        get().clearHighlights();
+        
+        setTimeout(() => {
+          get().endPlayerTurn();
+        }, 200);
       } else {
         const enemy = enemies.find(e => e.id === entityId);
         if (!enemy) return;
@@ -245,14 +255,17 @@ export const useFightSimulator = create<FightSimulatorState>()(
           ),
         });
       }
-      
-      get().clearHighlights();
     },
     
     attackEntity: (attackerId: string, targetId: string) => {
-      const { player, enemies, stats } = get();
+      const { player, enemies, stats, isPlayerTurn } = get();
       
       if (attackerId === "player") {
+        if (!isPlayerTurn) {
+          console.log("Not player's turn");
+          return;
+        }
+        
         if (player.attackCooldown > 0) {
           console.log("Attack on cooldown");
           return;
@@ -291,9 +304,16 @@ export const useFightSimulator = create<FightSimulatorState>()(
           console.log(`${targetId} eliminated!`);
         }
         
+        get().clearHighlights();
+        
         if (get().enemies.length === 0) {
           setTimeout(() => get().end(), 1000);
+          return;
         }
+        
+        setTimeout(() => {
+          get().endPlayerTurn();
+        }, 200);
       } else {
         const attacker = enemies.find(e => e.id === attackerId);
         if (!attacker || attacker.attackCooldown > 0) return;
@@ -324,60 +344,62 @@ export const useFightSimulator = create<FightSimulatorState>()(
           setTimeout(() => get().end(), 1000);
         }
       }
-      
-      get().clearHighlights();
     },
     
-    updateCooldowns: () => {
-      const { player, enemies } = get();
-      
-      set({
-        player: {
-          ...player,
-          attackCooldown: Math.max(0, player.attackCooldown - 1),
-          moveCooldown: Math.max(0, player.moveCooldown - 1),
-          energy: Math.min(player.maxEnergy, player.energy + 15),
-        },
-        enemies: enemies.map(e => ({
-          ...e,
-          attackCooldown: Math.max(0, e.attackCooldown - 1),
-          moveCooldown: Math.max(0, e.moveCooldown - 1),
-        })),
-      });
-    },
-    
-    processTick: () => {
-      const { phase, currentTurn, stats } = get();
+    endPlayerTurn: () => {
+      const { phase, player, enemies } = get();
       
       if (phase !== "playing") return;
       
-      get().updateCooldowns();
+      console.log("Player turn ended");
+      
+      const updatedPlayer = {
+        ...player,
+        attackCooldown: Math.max(0, player.attackCooldown - 1),
+        moveCooldown: Math.max(0, player.moveCooldown - 1),
+        energy: Math.min(player.maxEnergy, player.energy + 15),
+      };
+      
+      const updatedEnemies = enemies.map(e => ({
+        ...e,
+        attackCooldown: Math.max(0, e.attackCooldown - 1),
+        moveCooldown: Math.max(0, e.moveCooldown - 1),
+      }));
+      
+      const npcDelay = getRandomNPCDelay();
       
       set({
-        currentTurn: currentTurn + 1,
-        stats: {
-          ...stats,
-          turnsSurvived: currentTurn + 1,
-        },
+        isPlayerTurn: false,
+        player: updatedPlayer,
+        enemies: updatedEnemies,
+        npcThinkingDelay: npcDelay,
       });
+      
+      console.log(`NPC turn starting with ${npcDelay}ms delay...`);
       
       setTimeout(() => {
-        get().processEnemyAI();
-      }, 300);
+        get().processNPCTurn();
+      }, npcDelay);
     },
     
-    processEnemyAI: () => {
-      const { enemies, player, phase } = get();
+    processNPCTurn: () => {
+      const { enemies, player, phase, currentTurn, stats } = get();
       
       if (phase !== "playing") return;
       
-      enemies.forEach(enemy => {
-        if (enemy.health <= 0) return;
+      console.log("Processing NPC turn");
+      
+      let actionTaken = false;
+      
+      for (const enemy of enemies) {
+        if (enemy.health <= 0) continue;
         
         const distanceToPlayer = get().getDistance(enemy.position, player.position);
         
         if (distanceToPlayer <= 3 && enemy.attackCooldown === 0) {
           get().attackEntity(enemy.id, "player");
+          actionTaken = true;
+          break;
         } else if (enemy.moveCooldown === 0 && distanceToPlayer > 2) {
           const dx = player.position.x - enemy.position.x;
           const dy = player.position.y - enemy.position.y;
@@ -392,18 +414,36 @@ export const useFightSimulator = create<FightSimulatorState>()(
           
           if (get().isValidMove(enemy.position, newPos)) {
             get().moveEntity(enemy.id, newPos);
+            actionTaken = true;
+            break;
           } else {
             const altPos1 = { x: enemy.position.x + stepX, y: enemy.position.y };
             const altPos2 = { x: enemy.position.x, y: enemy.position.y + stepY };
             
             if (get().isValidMove(enemy.position, altPos1)) {
               get().moveEntity(enemy.id, altPos1);
+              actionTaken = true;
+              break;
             } else if (get().isValidMove(enemy.position, altPos2)) {
               get().moveEntity(enemy.id, altPos2);
+              actionTaken = true;
+              break;
             }
           }
         }
-      });
+      }
+      
+      setTimeout(() => {
+        set({
+          isPlayerTurn: true,
+          currentTurn: currentTurn + 1,
+          stats: {
+            ...stats,
+            turnsSurvived: currentTurn + 1,
+          },
+        });
+        console.log("Player's turn");
+      }, 300);
     },
     
     highlightTiles: (type: "move" | "attack" | "none", positions: Position[]) => {

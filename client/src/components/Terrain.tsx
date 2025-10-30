@@ -15,7 +15,7 @@ export function Terrain() {
   const phase = useFightSimulator((state) => state.phase);
 
   const tileSize = 1;
-  const tileSpacing = 0.05;
+  const tileSpacing = 0.02;
 
   const octagonShape = useMemo(() => {
     const shape = new THREE.Shape();
@@ -37,6 +37,19 @@ export function Terrain() {
     
     return shape;
   }, [tileSize]);
+
+  const darkenColor = (color: string, factor: number = 0.8) => {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    const newR = Math.floor(r * factor);
+    const newG = Math.floor(g * factor);
+    const newB = Math.floor(b * factor);
+    
+    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  };
 
   const handleTileClick = (x: number, y: number) => {
     if (phase !== "playing") return;
@@ -81,42 +94,69 @@ export function Terrain() {
           const posX = (x - gridSize / 2) * (tileSize + tileSpacing);
           const posZ = (y - gridSize / 2) * (tileSize + tileSpacing);
           
-          let color = "#2a2a2a";
+          let borderColor = "#3a3a3a";
           
           if (tile.isHighlighted) {
             if (tile.highlightType === "move") {
-              color = "#4a9eff";
+              borderColor = "#4a9eff";
             } else if (tile.highlightType === "attack") {
-              color = "#ff4a4a";
+              borderColor = "#ff4a4a";
             }
           }
           
+          const backgroundColor = darkenColor(borderColor, 0.8);
           const isSelected = selectedTile?.x === x && selectedTile?.y === y;
           
           return (
-            <mesh
-              key={`${x}-${y}`}
-              position={[posX, 0, posZ]}
-              rotation={[-Math.PI / 2, 0, 0]}
-              onClick={() => handleTileClick(x, y)}
-              onPointerOver={() => handleTileHover(x, y, true)}
-              onPointerOut={() => handleTileHover(x, y, false)}
-            >
-              <shapeGeometry args={[octagonShape]} />
-              <meshStandardMaterial
-                color={color}
-                emissive={isSelected ? "#ffffff" : tile.isHighlighted ? color : "#000000"}
-                emissiveIntensity={isSelected ? 0.3 : tile.isHighlighted ? 0.4 : 0}
-                metalness={0.2}
-                roughness={0.8}
-              />
-            </mesh>
+            <group key={`${x}-${y}`} position={[posX, 0.01, posZ]}>
+              <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                onClick={() => handleTileClick(x, y)}
+                onPointerOver={() => handleTileHover(x, y, true)}
+                onPointerOut={() => handleTileHover(x, y, false)}
+              >
+                <shapeGeometry args={[octagonShape]} />
+                <meshStandardMaterial
+                  color={backgroundColor}
+                  emissive={isSelected ? "#ffffff" : "#000000"}
+                  emissiveIntensity={isSelected ? 0.2 : 0}
+                  metalness={0.1}
+                  roughness={0.9}
+                />
+              </mesh>
+              
+              <lineLoop rotation={[-Math.PI / 2, 0, 0]}>
+                <bufferGeometry>
+                  <bufferAttribute
+                    attach="attributes-position"
+                    count={8}
+                    array={new Float32Array([
+                      Math.cos(0 * Math.PI / 4) * (tileSize / 2), Math.sin(0 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(1 * Math.PI / 4) * (tileSize / 2), Math.sin(1 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(2 * Math.PI / 4) * (tileSize / 2), Math.sin(2 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(3 * Math.PI / 4) * (tileSize / 2), Math.sin(3 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(4 * Math.PI / 4) * (tileSize / 2), Math.sin(4 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(5 * Math.PI / 4) * (tileSize / 2), Math.sin(5 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(6 * Math.PI / 4) * (tileSize / 2), Math.sin(6 * Math.PI / 4) * (tileSize / 2), 0,
+                      Math.cos(7 * Math.PI / 4) * (tileSize / 2), Math.sin(7 * Math.PI / 4) * (tileSize / 2), 0,
+                    ])}
+                    itemSize={3}
+                  />
+                </bufferGeometry>
+                <lineBasicMaterial
+                  color={borderColor}
+                  linewidth={2}
+                  opacity={tile.isHighlighted ? 1 : 0.6}
+                  transparent
+                />
+              </lineLoop>
+            </group>
           );
         })
       )}
       
       <gridHelper
-        args={[gridSize * (tileSize + tileSpacing), gridSize, "#333333", "#1a1a1a"]}
+        args={[gridSize * (tileSize + tileSpacing), gridSize, "#222222", "#0a0a0a"]}
         position={[0, -0.01, 0]}
       />
     </group>

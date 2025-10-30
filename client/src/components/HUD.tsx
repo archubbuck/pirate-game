@@ -7,6 +7,8 @@ export function HUD() {
   const enemies = useFightSimulator((state) => state.enemies);
   const stats = useFightSimulator((state) => state.stats);
   const currentTurn = useFightSimulator((state) => state.currentTurn);
+  const isPlayerTurn = useFightSimulator((state) => state.isPlayerTurn);
+  const npcThinkingDelay = useFightSimulator((state) => state.npcThinkingDelay);
   const start = useFightSimulator((state) => state.start);
   const restart = useFightSimulator((state) => state.restart);
   const isMuted = useAudio((state) => state.isMuted);
@@ -32,7 +34,7 @@ export function HUD() {
                 <li>• Click enemies to attack (costs 20 energy)</li>
                 <li>• Move range: 2 tiles</li>
                 <li>• Attack range: 3 tiles</li>
-                <li>• Turns happen every 600ms</li>
+                <li>• Take turns with NPC opponents</li>
               </ul>
             </div>
             
@@ -166,8 +168,17 @@ export function HUD() {
             </button>
           </div>
           
-          <div className="absolute bottom-4 right-4 bg-gray-900/90 border border-gray-700 rounded-lg p-3">
-            <p className="text-gray-400 text-xs">Next tick in 600ms</p>
+          <div className={`absolute bottom-4 right-4 border-2 rounded-lg p-4 min-w-48 text-center ${
+            isPlayerTurn ? "bg-green-900/90 border-green-500" : "bg-red-900/90 border-red-500"
+          }`}>
+            <p className="text-white font-bold text-lg">
+              {isPlayerTurn ? "Your Turn" : "NPC Turn"}
+            </p>
+            {!isPlayerTurn && (
+              <p className="text-gray-300 text-xs mt-1">
+                Thinking... ({Math.round(npcThinkingDelay / 1000)}s)
+              </p>
+            )}
           </div>
         </>
       )}
