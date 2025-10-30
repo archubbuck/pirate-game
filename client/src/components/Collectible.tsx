@@ -36,8 +36,8 @@ export function Collectible({ collectible }: CollectibleProps) {
   
   return (
     <group position={[posX, 0, posZ]}>
-      <mesh ref={meshRef} position={[0, 0.3, 0]} castShadow>
-        <octahedronGeometry args={[0.2, 0]} />
+      <mesh ref={meshRef} position={[0, 0.5, 0]} castShadow>
+        <octahedronGeometry args={[0.5, 0]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
@@ -48,10 +48,10 @@ export function Collectible({ collectible }: CollectibleProps) {
       </mesh>
       
       <pointLight
-        position={[0, 0.5, 0]}
+        position={[0, 0.8, 0]}
         color={color}
-        intensity={0.5}
-        distance={2}
+        intensity={0.8}
+        distance={3}
       />
     </group>
   );

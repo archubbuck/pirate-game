@@ -1,9 +1,10 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
 import { Terrain } from "./Terrain";
 import { Player } from "./Player";
 import { Collectible } from "./Collectible";
 import { MovementController } from "./MovementController";
+import { CameraFollowPlayer } from "./CameraFollowPlayer";
+import { DynamicLight } from "./DynamicLight";
 import { HUD } from "./HUD";
 import { useGameStore } from "@/lib/stores/useGameStore";
 
@@ -12,19 +13,8 @@ function Scene() {
   
   return (
     <>
-      <ambientLight intensity={0.3} />
-      <directionalLight
-        position={[20, 40, 20]}
-        intensity={1}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={100}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
-      />
+      <ambientLight intensity={0.5} />
+      <DynamicLight />
       <directionalLight position={[-20, 20, -20]} intensity={0.3} />
       
       <Terrain />
@@ -34,16 +24,7 @@ function Scene() {
       ))}
       
       <MovementController />
-      
-      <OrbitControls
-        enablePan={false}
-        enableRotate={true}
-        enableZoom={true}
-        minDistance={20}
-        maxDistance={60}
-        maxPolarAngle={Math.PI / 2.5}
-        minPolarAngle={Math.PI / 6}
-      />
+      <CameraFollowPlayer />
     </>
   );
 }

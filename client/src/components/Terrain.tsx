@@ -8,6 +8,7 @@ export function Terrain() {
   const setHoveredTile = useGameStore((state) => state.setHoveredTile);
   const setTargetPosition = useGameStore((state) => state.setTargetPosition);
   const phase = useGameStore((state) => state.phase);
+  const player = useGameStore((state) => state.player);
 
   const tileSize = 1;
   const tileSpacing = 0.02;
@@ -64,6 +65,11 @@ export function Terrain() {
     <group>
       {tiles.map((row, y) =>
         row.map((tile, x) => {
+          const distanceToPlayer = Math.abs(x - player.position.x) + Math.abs(y - player.position.y);
+          if (distanceToPlayer > 8) {
+            return null;
+          }
+          
           const posX = (x - gridSize / 2) * (tileSize + tileSpacing);
           const posZ = (y - gridSize / 2) * (tileSize + tileSpacing);
           
