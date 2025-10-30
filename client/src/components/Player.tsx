@@ -1,19 +1,19 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useFightSimulator } from "@/lib/stores/useFightSimulator";
+import { useGameStore } from "@/lib/stores/useGameStore";
 import * as THREE from "three";
 import { Text } from "@react-three/drei";
 
 export function Player() {
-  const player = useFightSimulator((state) => state.player);
-  const gridSize = useFightSimulator((state) => state.gridSize);
+  const player = useGameStore((state) => state.player);
+  const gridSize = useGameStore((state) => state.gridSize);
   const meshRef = useRef<THREE.Mesh>(null);
   
   const tileSize = 1;
   const tileSpacing = 0.05;
   
-  const posX = (player.position.x - gridSize / 2) * (tileSize + tileSpacing);
-  const posZ = (player.position.y - gridSize / 2) * (tileSize + tileSpacing);
+  const posX = (player.visualPosition.x - gridSize / 2) * (tileSize + tileSpacing);
+  const posZ = (player.visualPosition.y - gridSize / 2) * (tileSize + tileSpacing);
   
   useFrame((state) => {
     if (meshRef.current) {
@@ -21,8 +21,6 @@ export function Player() {
       meshRef.current.position.y = 0.5 + Math.sin(time * 2) * 0.05;
     }
   });
-  
-  const healthPercent = (player.health / player.maxHealth) * 100;
   
   return (
     <group position={[posX, 0, posZ]}>
@@ -37,24 +35,14 @@ export function Player() {
         />
       </mesh>
       
-      <mesh position={[0, 1.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.6, 0.1]} />
-        <meshBasicMaterial color="#1f1f1f" />
-      </mesh>
-      
-      <mesh position={[0, 1.21, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.58 * (healthPercent / 100), 0.08]} />
-        <meshBasicMaterial color={healthPercent > 50 ? "#4ade80" : healthPercent > 25 ? "#facc15" : "#ef4444"} />
-      </mesh>
-      
       <Text
-        position={[0, 1.4, 0]}
+        position={[0, 1.2, 0]}
         fontSize={0.15}
         color="white"
         anchorX="center"
         anchorY="middle"
       >
-        PLAYER
+        EXPLORER
       </Text>
     </group>
   );
