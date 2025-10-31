@@ -3,22 +3,62 @@ import { useGameStore } from "@/lib/stores/useGameStore";
 export function Shop() {
   const isOpen = useGameStore((state) => state.isShopOpen);
   const toggleShop = useGameStore((state) => state.toggleShop);
-  const getCurrency = useGameStore((state) => state.getCurrency);
+  const currency = useGameStore((state) => state.currency);
+  const shipUpgrades = useGameStore((state) => state.shipUpgrades);
   const purchasePowerUp = useGameStore((state) => state.purchasePowerUp);
+  const purchaseShipUpgrade = useGameStore((state) => state.purchaseShipUpgrade);
   const purchaseMapUnlock = useGameStore((state) => state.purchaseMapUnlock);
   const mapUnlocks = useGameStore((state) => state.mapUnlocks);
   const activePowerUps = useGameStore((state) => state.activePowerUps);
 
   if (!isOpen) return null;
 
-  const currency = getCurrency();
-  const totalItems = Object.values(currency).reduce((sum, count) => sum + count, 0);
+  const shipUpgradesList = [
+    { 
+      type: "engine" as const, 
+      name: "Engine Upgrade", 
+      description: "Increase travel speed between tiles", 
+      icon: "⚡",
+      currentLevel: shipUpgrades.engine,
+      cost: shipUpgrades.engine * 50,
+    },
+    { 
+      type: "scanner" as const, 
+      name: "Scanner Upgrade", 
+      description: "Improve accuracy of collection time estimates", 
+      icon: "📡",
+      currentLevel: shipUpgrades.scanner,
+      cost: shipUpgrades.scanner * 50,
+    },
+    { 
+      type: "salvageRig" as const, 
+      name: "Salvage Rig Upgrade", 
+      description: "Collect materials faster", 
+      icon: "🔧",
+      currentLevel: shipUpgrades.salvageRig,
+      cost: shipUpgrades.salvageRig * 50,
+    },
+    { 
+      type: "cargoHold" as const, 
+      name: "Cargo Hold Upgrade", 
+      description: "Increase cargo capacity by 5", 
+      icon: "📦",
+      currentLevel: shipUpgrades.cargoHold,
+      cost: shipUpgrades.cargoHold * 50,
+    },
+  ];
 
   const powerUps = [
-    { type: "speed" as const, name: "Speed Boost", cost: 3, description: "Move faster for 30 seconds", icon: "⚡" },
-    { type: "vision" as const, name: "Enhanced Vision", cost: 4, description: "See 8 tiles instead of 5 for 60 seconds", icon: "👁️" },
-    { type: "magnet" as const, name: "Item Magnet", cost: 5, description: "Auto-collect nearby items for 45 seconds", icon: "🧲" },
+    { type: "speed" as const, name: "Afterburner Rig", cost: 25, description: "Temporary speed boost for 30 seconds", icon: "⚡" },
+    { type: "vision" as const, name: "Sonar Beacon", cost: 30, description: "Extended vision range for 60 seconds", icon: "👁️" },
+    { type: "magnet" as const, name: "Grapple Winch", cost: 35, description: "Auto-collect nearby materials for 45 seconds", icon: "🧲" },
   ];
+
+  const handlePurchaseShipUpgrade = (type: "engine" | "scanner" | "salvageRig" | "cargoHold") => {
+    if (purchaseShipUpgrade(type)) {
+      console.log(`Upgraded ${type}`);
+    }
+  };
 
   const handlePurchasePowerUp = (type: "speed" | "vision" | "magnet", cost: number) => {
     if (purchasePowerUp(type, cost)) {
@@ -56,7 +96,7 @@ export function Shop() {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "600px",
+          width: "700px",
           maxWidth: "90vw",
           maxHeight: "85vh",
           backgroundColor: "rgba(20, 20, 30, 0.98)",
@@ -69,7 +109,10 @@ export function Shop() {
         }}
       >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>Shop & Upgrades</h2>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "bold", color: "#fbbf24" }}>⚓ Watropolis Dockyard</h2>
+          <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#9ca3af" }}>Ship Upgrades & Equipment</p>
+        </div>
         <button
           onClick={toggleShop}
           style={{
@@ -85,23 +128,80 @@ export function Shop() {
         </button>
       </div>
 
-      <div style={{ marginBottom: "24px", fontSize: "16px", color: "#aaa" }}>
-        Available Currency: <span style={{ color: "#fbbf24", fontWeight: "bold" }}>{totalItems} items</span>
+      <div style={{ marginBottom: "24px", padding: "12px", backgroundColor: "rgba(251, 191, 36, 0.1)", borderRadius: "8px", border: "1px solid rgba(251, 191, 36, 0.3)" }}>
+        <div style={{ fontSize: "14px", color: "#9ca3af" }}>Available Currency:</div>
+        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fbbf24" }}>⚙️ {currency}</div>
       </div>
 
       <div style={{ marginBottom: "32px" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "16px", color: "#4a9eff" }}>Power-Ups</h3>
+        <h3 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "16px", color: "#3b82f6" }}>
+          🔧 Permanent Ship Upgrades
+        </h3>
+        <div style={{ display: "grid", gap: "12px" }}>
+          {shipUpgradesList.map((upgrade) => {
+            const canAfford = currency >= upgrade.cost;
+            
+            return (
+              <div
+                key={upgrade.type}
+                style={{
+                  backgroundColor: "rgba(59, 130, 246, 0.05)",
+                  border: "2px solid rgba(59, 130, 246, 0.3)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
+                  <div style={{ fontSize: "32px" }}>{upgrade.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "16px", fontWeight: "bold" }}>{upgrade.name}</div>
+                    <div style={{ fontSize: "14px", color: "#888", marginBottom: "4px" }}>{upgrade.description}</div>
+                    <div style={{ fontSize: "12px", color: "#3b82f6" }}>
+                      Current Level: {upgrade.currentLevel}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePurchaseShipUpgrade(upgrade.type)}
+                  disabled={!canAfford}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: canAfford ? "#3b82f6" : "#333",
+                    color: canAfford ? "#fff" : "#666",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    cursor: canAfford ? "pointer" : "not-allowed",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ⚙️ {upgrade.cost}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: "32px" }}>
+        <h3 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "16px", color: "#10b981" }}>
+          ⚡ Temporary Power-Ups
+        </h3>
         <div style={{ display: "grid", gap: "12px" }}>
           {powerUps.map((powerUp) => {
             const isActive = isPowerUpActive(powerUp.type);
-            const canAfford = totalItems >= powerUp.cost;
+            const canAfford = currency >= powerUp.cost;
             
             return (
               <div
                 key={powerUp.type}
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  border: isActive ? "2px solid #34d399" : "2px solid #444",
+                  backgroundColor: "rgba(16, 185, 129, 0.05)",
+                  border: isActive ? "2px solid #10b981" : "2px solid rgba(16, 185, 129, 0.3)",
                   borderRadius: "8px",
                   padding: "16px",
                   display: "flex",
@@ -115,6 +215,7 @@ export function Shop() {
                   <div>
                     <div style={{ fontSize: "16px", fontWeight: "bold" }}>{powerUp.name}</div>
                     <div style={{ fontSize: "14px", color: "#888" }}>{powerUp.description}</div>
+                    {isActive && <div style={{ fontSize: "12px", color: "#10b981", marginTop: "4px" }}>● Active</div>}
                   </div>
                 </div>
                 <button
@@ -122,16 +223,17 @@ export function Shop() {
                   disabled={!canAfford || isActive}
                   style={{
                     padding: "8px 16px",
-                    backgroundColor: canAfford && !isActive ? "#4a9eff" : "#333",
-                    color: canAfford && !isActive ? "#ffffff" : "#666",
+                    backgroundColor: canAfford && !isActive ? "#10b981" : "#333",
+                    color: canAfford && !isActive ? "#fff" : "#666",
                     border: "none",
                     borderRadius: "6px",
-                    cursor: canAfford && !isActive ? "pointer" : "not-allowed",
-                    fontWeight: "bold",
                     fontSize: "14px",
+                    fontWeight: "bold",
+                    cursor: canAfford && !isActive ? "pointer" : "not-allowed",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {isActive ? "Active" : `${powerUp.cost} items`}
+                  ⚙️ {powerUp.cost}
                 </button>
               </div>
             );
@@ -140,47 +242,50 @@ export function Shop() {
       </div>
 
       <div>
-        <h3 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "16px", color: "#a855f7" }}>Map Unlocks</h3>
+        <h3 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "16px", color: "#f59e0b" }}>
+          🗺️ Sea Route Unlocks
+        </h3>
         <div style={{ display: "grid", gap: "12px" }}>
           {mapUnlocks.map((unlock) => {
-            const canAfford = totalItems >= unlock.cost;
+            const canAfford = currency >= unlock.cost;
             
             return (
               <div
                 key={unlock.id}
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  border: unlock.unlocked ? "2px solid #34d399" : "2px solid #444",
+                  backgroundColor: unlock.unlocked ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.05)",
+                  border: unlock.unlocked ? "2px solid #10b981" : "2px solid rgba(245, 158, 11, 0.3)",
                   borderRadius: "8px",
                   padding: "16px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  opacity: unlock.unlocked ? 0.7 : 1,
                 }}
               >
                 <div>
                   <div style={{ fontSize: "16px", fontWeight: "bold" }}>{unlock.name}</div>
-                  <div style={{ fontSize: "14px", color: "#888" }}>
-                    Reveals a new area of the map
-                  </div>
+                  <div style={{ fontSize: "14px", color: "#888" }}>Explore new salvage regions</div>
+                  {unlock.unlocked && <div style={{ fontSize: "12px", color: "#10b981", marginTop: "4px" }}>✓ Unlocked</div>}
                 </div>
-                <button
-                  onClick={() => handlePurchaseMapUnlock(unlock.id)}
-                  disabled={!canAfford || unlock.unlocked}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: canAfford && !unlock.unlocked ? "#a855f7" : "#333",
-                    color: canAfford && !unlock.unlocked ? "#ffffff" : "#666",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: canAfford && !unlock.unlocked ? "pointer" : "not-allowed",
-                    fontWeight: "bold",
-                    fontSize: "14px",
-                  }}
-                >
-                  {unlock.unlocked ? "Unlocked" : `${unlock.cost} items`}
-                </button>
+                {!unlock.unlocked && (
+                  <button
+                    onClick={() => handlePurchaseMapUnlock(unlock.id)}
+                    disabled={!canAfford}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: canAfford ? "#f59e0b" : "#333",
+                      color: canAfford ? "#fff" : "#666",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      cursor: canAfford ? "pointer" : "not-allowed",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    ⚙️ {unlock.cost}
+                  </button>
+                )}
               </div>
             );
           })}

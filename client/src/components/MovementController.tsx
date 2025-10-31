@@ -106,7 +106,9 @@ export function MovementController() {
   const targetPosition = useGameStore((state) => state.targetPosition);
   const currentPath = useGameStore((state) => state.currentPath);
   const isMoving = useGameStore((state) => state.isMoving);
+  const isCollecting = useGameStore((state) => state.isCollecting);
   const gridSize = useGameStore((state) => state.gridSize);
+  const collectibles = useGameStore((state) => state.collectibles);
   const setPath = useGameStore((state) => state.setPath);
   const setIsMoving = useGameStore((state) => state.setIsMoving);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
@@ -115,6 +117,13 @@ export function MovementController() {
   const highlightPath = useGameStore((state) => state.highlightPath);
   const clearHighlights = useGameStore((state) => state.clearHighlights);
   const activePowerUps = useGameStore((state) => state.activePowerUps);
+  const getTravelTime = useGameStore((state) => state.getTravelTime);
+  const startTravel = useGameStore((state) => state.startTravel);
+  const startCollection = useGameStore((state) => state.startCollection);
+  const completeCollection = useGameStore((state) => state.completeCollection);
+  const collectionStartTime = useGameStore((state) => state.collectionStartTime);
+  const collectionDuration = useGameStore((state) => state.collectionDuration);
+  const getEstimatedCollectionTime = useGameStore((state) => state.getEstimatedCollectionTime);
   
   const movementProgress = useRef(0);
   const baseSpeed = 3;
@@ -122,23 +131,34 @@ export function MovementController() {
   const moveSpeed = hasSpeedBoost ? baseSpeed * 1.5 : baseSpeed;
   
   useEffect(() => {
-    if (targetPosition && !isMoving) {
+    if (targetPosition && !isMoving && !isCollecting) {
       const path = findPath(player.position, targetPosition, gridSize);
       
       if (path.length > 0) {
-        console.log(`Path found with ${path.length} steps`);
+        const distance = path.length;
+        const travelTime = getTravelTime(distance);
+        console.log(`Path found with ${path.length} steps, ETA: ${(travelTime / 1000).toFixed(1)}s`);
         setPath(path);
         highlightPath(path);
         setIsMoving(true);
+        startTravel(travelTime);
         movementProgress.current = 0;
       } else {
         console.log("No path found to target");
         setTargetPosition(null);
       }
     }
-  }, [targetPosition, player.position, isMoving, gridSize, setPath, setIsMoving, setTargetPosition, highlightPath]);
+  }, [targetPosition, player.position, isMoving, isCollecting, gridSize, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
   
   useFrame((state, delta) => {
+    if (isCollecting && collectionStartTime && collectionDuration) {
+      const elapsed = Date.now() - collectionStartTime;
+      if (elapsed >= collectionDuration) {
+        completeCollection();
+      }
+      return;
+    }
+    
     if (!isMoving || currentPath.length === 0) return;
     
     movementProgress.current += delta * moveSpeed;
@@ -166,6 +186,15 @@ export function MovementController() {
         setIsMoving(false);
         clearHighlights();
         console.log("Destination reached");
+        
+        const collectible = collectibles.find(
+          c => c.position.x === nextPosition.x && c.position.y === nextPosition.y
+        );
+        
+        if (collectible) {
+          const estimatedTime = getEstimatedCollectionTime(collectible.collectionTime);
+          startCollection(collectible.id, estimatedTime);
+        }
       } else {
         highlightPath(remainingPath);
       }

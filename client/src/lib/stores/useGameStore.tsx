@@ -16,12 +16,14 @@ export interface Player {
 export interface Collectible {
   id: string;
   position: Position;
-  type: string;
+  type: "timber" | "alloy" | "circuit" | "biofiber";
+  richness: number;
+  collectionTime: number;
 }
 
 export interface CollectedItem {
   id: string;
-  type: string;
+  type: "timber" | "alloy" | "circuit" | "biofiber";
 }
 
 export interface PowerUp {
@@ -34,6 +36,13 @@ export interface MapUnlock {
   name: string;
   cost: number;
   unlocked: boolean;
+}
+
+export interface ShipUpgrade {
+  engine: number;
+  scanner: number;
+  salvageRig: number;
+  cargoHold: number;
 }
 
 export interface Tile {
@@ -56,6 +65,13 @@ interface GameState {
   currentPath: Position[];
   isMoving: boolean;
   targetPosition: Position | null;
+  travelStartTime: number | null;
+  travelDuration: number | null;
+  
+  isCollecting: boolean;
+  collectionStartTime: number | null;
+  collectionDuration: number | null;
+  collectingItemId: string | null;
   
   hoveredTile: Position | null;
   
@@ -66,6 +82,9 @@ interface GameState {
   activePowerUps: PowerUp[];
   mapUnlocks: MapUnlock[];
   visionRadius: number;
+  
+  shipUpgrades: ShipUpgrade;
+  currency: number;
   
   start: () => void;
   restart: () => void;
@@ -82,8 +101,15 @@ interface GameState {
   toggleShop: () => void;
   purchasePowerUp: (type: PowerUp["type"], cost: number) => boolean;
   purchaseMapUnlock: (unlockId: string) => boolean;
+  purchaseShipUpgrade: (upgradeType: keyof ShipUpgrade) => boolean;
+  sellAllCargo: () => void;
   activatePowerUp: (type: PowerUp["type"], duration?: number) => void;
   revealMapArea: (unlockId: string) => void;
+  
+  startTravel: (duration: number) => void;
+  startCollection: (itemId: string, duration: number) => void;
+  cancelCollection: () => void;
+  completeCollection: () => void;
   
   revealTilesAround: (position: Position, radius: number) => void;
   highlightPath: (path: Position[]) => void;
@@ -91,6 +117,10 @@ interface GameState {
   setHoveredTile: (position: Position | null) => void;
   
   getDistance: (from: Position, to: Position) => number;
+  getTravelTime: (distance: number) => number;
+  getEstimatedCollectionTime: (actualTime: number) => number;
+  getCargoCount: () => number;
+  getMaxCargo: () => number;
   getCurrency: () => Record<string, number>;
 }
 
@@ -125,7 +155,7 @@ const createCollectibles = (): Collectible[] => {
   
   occupied.add("20,20");
   
-  const types = ["gem", "coin", "star", "crystal"];
+  const types: ("timber" | "alloy" | "circuit" | "biofiber")[] = ["timber", "alloy", "circuit", "biofiber"];
   
   for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
     let position: Position;
@@ -141,10 +171,15 @@ const createCollectibles = (): Collectible[] => {
     
     occupied.add(posKey);
     
+    const richness = Math.floor(Math.random() * 3) + 1;
+    const collectionTime = richness * 3000 + Math.random() * 2000;
+    
     collectibles.push({
       id: `collectible-${i}`,
       position,
       type: types[Math.floor(Math.random() * types.length)],
+      richness,
+      collectionTime,
     });
   }
   
@@ -152,11 +187,18 @@ const createCollectibles = (): Collectible[] => {
 };
 
 const createMapUnlocks = (): MapUnlock[] => [
-  { id: "unlock1", name: "Northern Territory", cost: 5, unlocked: false },
-  { id: "unlock2", name: "Eastern Expanse", cost: 8, unlocked: false },
-  { id: "unlock3", name: "Southern Depths", cost: 10, unlocked: false },
-  { id: "unlock4", name: "Western Frontier", cost: 12, unlocked: false },
+  { id: "unlock1", name: "Sunken Metro Line", cost: 50, unlocked: false },
+  { id: "unlock2", name: "Coral Expanse", cost: 100, unlocked: false },
+  { id: "unlock3", name: "Tempest Graveyard", cost: 150, unlocked: false },
+  { id: "unlock4", name: "Glacier Runoff", cost: 200, unlocked: false },
 ];
+
+const createInitialShipUpgrades = (): ShipUpgrade => ({
+  engine: 1,
+  scanner: 1,
+  salvageRig: 1,
+  cargoHold: 1,
+});
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector((set, get) => ({
@@ -171,6 +213,13 @@ export const useGameStore = create<GameState>()(
     currentPath: [],
     isMoving: false,
     targetPosition: null,
+    travelStartTime: null,
+    travelDuration: null,
+    
+    isCollecting: false,
+    collectionStartTime: null,
+    collectionDuration: null,
+    collectingItemId: null,
     
     hoveredTile: null,
     
@@ -181,6 +230,9 @@ export const useGameStore = create<GameState>()(
     activePowerUps: [],
     mapUnlocks: createMapUnlocks(),
     visionRadius: 5,
+    
+    shipUpgrades: createInitialShipUpgrades(),
+    currency: 0,
     
     start: () => {
       const initialPlayer = createInitialPlayer();
@@ -201,12 +253,20 @@ export const useGameStore = create<GameState>()(
         currentPath: [],
         isMoving: false,
         targetPosition: null,
+        travelStartTime: null,
+        travelDuration: null,
+        isCollecting: false,
+        collectionStartTime: null,
+        collectionDuration: null,
+        collectingItemId: null,
         hoveredTile: null,
         isInventoryOpen: false,
         isShopOpen: false,
         activePowerUps: [],
         mapUnlocks: createMapUnlocks(),
         visionRadius: 5,
+        shipUpgrades: createInitialShipUpgrades(),
+        currency: 0,
       });
       console.log("Game restarted");
     },
@@ -337,27 +397,14 @@ export const useGameStore = create<GameState>()(
     },
     
     purchasePowerUp: (type: PowerUp["type"], cost: number) => {
-      const currency = get().getCurrency();
-      const totalItems = Object.values(currency).reduce((sum, count) => sum + count, 0);
-      
-      if (totalItems < cost) {
-        console.log(`Not enough items! Need ${cost}, have ${totalItems}`);
+      if (get().currency < cost) {
+        console.log(`Not enough currency! Need ${cost}, have ${get().currency}`);
         return false;
       }
       
-      const itemsToRemove = cost;
-      let removed = 0;
-      const newCollectedItems = [...get().collectedItems];
-      
-      while (removed < itemsToRemove && newCollectedItems.length > 0) {
-        newCollectedItems.pop();
-        removed++;
-      }
-      
-      set({ collectedItems: newCollectedItems });
-      
+      set(state => ({ currency: state.currency - cost }));
       get().activatePowerUp(type, type === "speed" ? 30000 : type === "vision" ? 60000 : 45000);
-      console.log(`Purchased ${type} power-up for ${cost} items`);
+      console.log(`Purchased ${type} power-up for ${cost} currency`);
       return true;
     },
     
@@ -365,32 +412,20 @@ export const useGameStore = create<GameState>()(
       const unlock = get().mapUnlocks.find(u => u.id === unlockId);
       if (!unlock || unlock.unlocked) return false;
       
-      const currency = get().getCurrency();
-      const totalItems = Object.values(currency).reduce((sum, count) => sum + count, 0);
-      
-      if (totalItems < unlock.cost) {
-        console.log(`Not enough items! Need ${unlock.cost}, have ${totalItems}`);
+      if (get().currency < unlock.cost) {
+        console.log(`Not enough currency! Need ${unlock.cost}, have ${get().currency}`);
         return false;
       }
       
-      const itemsToRemove = unlock.cost;
-      let removed = 0;
-      const newCollectedItems = [...get().collectedItems];
-      
-      while (removed < itemsToRemove && newCollectedItems.length > 0) {
-        newCollectedItems.pop();
-        removed++;
-      }
-      
       set(state => ({
-        collectedItems: newCollectedItems,
+        currency: state.currency - unlock.cost,
         mapUnlocks: state.mapUnlocks.map(u => 
           u.id === unlockId ? { ...u, unlocked: true } : u
         ),
       }));
       
       get().revealMapArea(unlockId);
-      console.log(`Unlocked ${unlock.name} for ${unlock.cost} items`);
+      console.log(`Unlocked ${unlock.name} for ${unlock.cost} currency`);
       return true;
     },
     
@@ -453,6 +488,117 @@ export const useGameStore = create<GameState>()(
     
     getDistance: (from: Position, to: Position) => {
       return Math.max(Math.abs(from.x - to.x), Math.abs(from.y - to.y));
+    },
+    
+    getTravelTime: (distance: number) => {
+      const baseSpeed = 1000;
+      const engineLevel = get().shipUpgrades.engine;
+      const speedBoost = get().activePowerUps.some(p => p.type === "speed") ? 0.5 : 1;
+      return (distance * baseSpeed) / engineLevel * speedBoost;
+    },
+    
+    getEstimatedCollectionTime: (actualTime: number) => {
+      const scannerLevel = get().shipUpgrades.scanner;
+      const minAccuracy = 0.6;
+      const maxAccuracy = 1.0;
+      const accuracy = minAccuracy + ((maxAccuracy - minAccuracy) * (scannerLevel - 1) / 4);
+      const variance = 1 - accuracy;
+      const randomFactor = 1 - variance + (Math.random() * variance * 2);
+      return actualTime * randomFactor;
+    },
+    
+    getCargoCount: () => {
+      return get().collectedItems.length;
+    },
+    
+    getMaxCargo: () => {
+      const baseCapacity = 10;
+      return baseCapacity + (get().shipUpgrades.cargoHold - 1) * 5;
+    },
+    
+    startTravel: (duration: number) => {
+      set({
+        travelStartTime: Date.now(),
+        travelDuration: duration,
+      });
+    },
+    
+    startCollection: (itemId: string, duration: number) => {
+      const cargoCount = get().getCargoCount();
+      const maxCargo = get().getMaxCargo();
+      
+      if (cargoCount >= maxCargo) {
+        console.log("Cargo hold is full! Return to Watropolis to sell materials.");
+        return;
+      }
+      
+      const salvageRigLevel = get().shipUpgrades.salvageRig;
+      const actualDuration = duration / salvageRigLevel;
+      
+      set({
+        isCollecting: true,
+        collectionStartTime: Date.now(),
+        collectionDuration: actualDuration,
+        collectingItemId: itemId,
+      });
+      
+      console.log(`Starting collection of ${itemId}, estimated ${(actualDuration / 1000).toFixed(1)}s`);
+    },
+    
+    cancelCollection: () => {
+      set({
+        isCollecting: false,
+        collectionStartTime: null,
+        collectionDuration: null,
+        collectingItemId: null,
+      });
+      console.log("Collection cancelled - resources forfeited");
+    },
+    
+    completeCollection: () => {
+      const itemId = get().collectingItemId;
+      if (itemId) {
+        get().collectItem(itemId);
+      }
+      set({
+        isCollecting: false,
+        collectionStartTime: null,
+        collectionDuration: null,
+        collectingItemId: null,
+      });
+    },
+    
+    sellAllCargo: () => {
+      const items = get().collectedItems;
+      const sellValue = items.length * 10;
+      
+      set(state => ({
+        currency: state.currency + sellValue,
+        collectedItems: [],
+      }));
+      
+      console.log(`Sold ${items.length} items for ${sellValue} currency`);
+    },
+    
+    purchaseShipUpgrade: (upgradeType: keyof ShipUpgrade) => {
+      const currentLevel = get().shipUpgrades[upgradeType];
+      const cost = currentLevel * 50;
+      
+      if (get().currency < cost) {
+        console.log(`Not enough currency! Need ${cost}, have ${get().currency}`);
+        return false;
+      }
+      
+      set(state => ({
+        currency: state.currency - cost,
+        shipUpgrades: {
+          ...state.shipUpgrades,
+          [upgradeType]: currentLevel + 1,
+        },
+      }));
+      
+      console.log(`Upgraded ${upgradeType} to level ${currentLevel + 1} for ${cost} currency`);
+      return true;
     },
   }))
 );

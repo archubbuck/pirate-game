@@ -8,10 +8,10 @@ interface CollectibleProps {
 }
 
 const COLLECTIBLE_COLORS: Record<string, string> = {
-  gem: "#a855f7",
-  coin: "#fbbf24",
-  star: "#60a5fa",
-  crystal: "#34d399",
+  timber: "#8b4513",
+  alloy: "#9ca3af",
+  circuit: "#3b82f6",
+  biofiber: "#10b981",
 };
 
 export function Collectible({ collectible }: CollectibleProps) {

@@ -16,17 +16,19 @@ export function MobileControls() {
       <button
         onClick={toggleInventory}
         className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 px-3 rounded shadow-lg transition-colors text-sm"
+        title="Cargo Hold"
       >
-        🎒
+        ⛴️
       </button>
       
       <button
         onClick={toggleShop}
         className="bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 text-white font-bold py-2 px-3 rounded shadow-lg transition-colors flex items-center gap-1 text-sm"
+        title="Watropolis Dockyard"
       >
-        <span>🛒</span>
+        <span>⚓</span>
         {totalCurrency > 0 && (
-          <span className="text-xs">{totalCurrency}</span>
+          <span className="text-xs">⚙️{totalCurrency}</span>
         )}
       </button>
     </div>
