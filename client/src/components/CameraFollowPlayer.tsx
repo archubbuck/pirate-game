@@ -68,7 +68,7 @@ export function CameraFollowPlayer() {
     const targetX = (player.visualPosition.x - gridSize / 2) * (tileSize + tileSpacing);
     const targetZ = (player.visualPosition.y - gridSize / 2) * (tileSize + tileSpacing);
     
-    const zoomFactor = zoomLevel / 100;
+    const zoomFactor = 100 / zoomLevel;
     const baseHeight = 35 * zoomFactor;
     const baseDistance = 20 * zoomFactor;
     
