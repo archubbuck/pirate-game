@@ -1,5 +1,6 @@
 import { useGameStore } from "@/lib/stores/useGameStore";
 import { useAudio } from "@/lib/stores/useAudio";
+import { useState, useEffect } from "react";
 
 export function HUD() {
   const phase = useGameStore((state) => state.phase);
@@ -27,6 +28,18 @@ export function HUD() {
   const setZoomLevel = useGameStore((state) => state.setZoomLevel);
   const isMuted = useAudio((state) => state.isMuted);
   const toggleMute = useAudio((state) => state.toggleMute);
+  
+  const [, setTick] = useState(0);
+  
+  useEffect(() => {
+    if (!isMoving && !isCollecting) return;
+    
+    const interval = setInterval(() => {
+      setTick(t => t + 1);
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [isMoving, isCollecting]);
   
   const totalCollectibles = collectedCount + collectibles.length;
   const cargoCount = getCargoCount();
