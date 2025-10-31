@@ -45,6 +45,16 @@ export interface ShipUpgrade {
   cargoHold: number;
 }
 
+export interface Artifact {
+  id: string;
+  position: Position;
+  name: string;
+  lore: string;
+  category: "technology" | "culture" | "infrastructure" | "personal";
+  isCollected: boolean;
+  clueRevealed: boolean;
+}
+
 export interface Tile {
   x: number;
   y: number;
@@ -60,6 +70,7 @@ interface GameState {
   collectibles: Collectible[];
   collectedCount: number;
   collectedItems: CollectedItem[];
+  artifacts: Artifact[];
   tiles: Tile[][];
   
   currentPath: Position[];
@@ -79,6 +90,8 @@ interface GameState {
   
   isInventoryOpen: boolean;
   isShopOpen: boolean;
+  isArtifactLogOpen: boolean;
+  isArchivistOpen: boolean;
   activePowerUps: PowerUp[];
   mapUnlocks: MapUnlock[];
   visionRadius: number;
@@ -88,6 +101,8 @@ interface GameState {
   
   showCancelConfirmation: boolean;
   pendingTargetPosition: Position | null;
+  
+  archivistUnlocked: boolean;
   
   start: () => void;
   restart: () => void;
@@ -105,12 +120,17 @@ interface GameState {
   
   toggleInventory: () => void;
   toggleShop: () => void;
+  toggleArtifactLog: () => void;
+  toggleArchivist: () => void;
   purchasePowerUp: (type: PowerUp["type"], cost: number) => boolean;
   purchaseMapUnlock: (unlockId: string) => boolean;
   purchaseShipUpgrade: (upgradeType: keyof ShipUpgrade) => boolean;
   sellAllCargo: () => void;
   activatePowerUp: (type: PowerUp["type"], duration?: number) => void;
   revealMapArea: (unlockId: string) => void;
+  collectArtifact: (id: string) => void;
+  purchaseArtifactClue: (artifactId: string) => boolean;
+  checkArchivistUnlock: () => void;
   
   startTravel: (duration: number) => void;
   startCollection: (itemId: string, duration: number) => void;
@@ -155,12 +175,11 @@ const createInitialPlayer = (): Player => ({
   visualPosition: { x: 20, y: 20 },
 });
 
-const createCollectibles = (): Collectible[] => {
-  const collectibles: Collectible[] = [];
+const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifacts: Artifact[] } => {
   const occupied = new Set<string>();
-  
   occupied.add("20,20");
   
+  const collectibles: Collectible[] = [];
   const types: ("timber" | "alloy" | "circuit" | "biofiber")[] = ["timber", "alloy", "circuit", "biofiber"];
   
   for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
@@ -189,7 +208,9 @@ const createCollectibles = (): Collectible[] => {
     });
   }
   
-  return collectibles;
+  const artifacts = createArtifacts(occupied);
+  
+  return { collectibles, artifacts };
 };
 
 const createMapUnlocks = (): MapUnlock[] => [
@@ -206,14 +227,70 @@ const createInitialShipUpgrades = (): ShipUpgrade => ({
   cargoHold: 1,
 });
 
+const createArtifacts = (occupied: Set<string>): Artifact[] => {
+  const artifactData = [
+    { name: "Server Rack Fragment", lore: "A twisted piece of metal bearing faded corporate logos. Once housed the digital memories of millions, now a corroded monument to lost connectivity.", category: "technology" as const },
+    { name: "Subway Token", lore: "A brass token from the Metro Transit Authority, dated 2065. The inscription reads 'Your journey continues.' It didn't.", category: "personal" as const },
+    { name: "Wedding Photo Album", lore: "Water-damaged photos of celebrations under blue skies. The final page shows a beachside ceremony—the same beach now 200 feet underwater.", category: "personal" as const },
+    { name: "Traffic Light Controller", lore: "An electronic box that once orchestrated vehicle flow through busy intersections. Its last command was eternal red.", category: "infrastructure" as const },
+    { name: "Museum Plaque", lore: "Bronze plaque: 'The Age of Oil: 1850-2070.' Someone scratched underneath: 'We knew. We didn't care.'", category: "culture" as const },
+    { name: "Child's Tablet Device", lore: "A learning device frozen on a geography lesson about glaciers. 'These ice sheets will last forever!' the cheerful narrator promised.", category: "technology" as const },
+    { name: "Office Coffee Mug", lore: "'World's Best Dad' printed on ceramic. Found in a submerged high-rise, still sitting on a desk as if waiting for Monday morning.", category: "personal" as const },
+    { name: "Weather Station Log", lore: "Final entry: 'Ocean temp +4.2°C above baseline. Evacuation protocols initiated. May God help us all.'", category: "technology" as const },
+    { name: "Theater Marquee Letter", lore: "The letter 'E' from the Grand Cinema's sign. Its last showing: 'An Inconvenient Truth.' Nobody came.", category: "culture" as const },
+    { name: "Sports Championship Ring", lore: "Gold ring celebrating the 2068 World Series. The winning team's stadium is now a reef teeming with fish.", category: "culture" as const },
+    { name: "Bridge Cable Sample", lore: "Steel cable from the Harbor Bridge, rated to last 200 years. It lasted 73 before the waters claimed it.", category: "infrastructure" as const },
+    { name: "Voting Ballot Box", lore: "Sealed ballot box from the 2064 election. The winner promised climate action. The box stayed sealed underwater.", category: "culture" as const },
+    { name: "Solar Panel Array", lore: "A rooftop solar installation meant to save the world. It powered the building's lights as the waters rose past the windows.", category: "technology" as const },
+    { name: "Restaurant Menu", lore: "Laminated menu from 'Neptune's Bounty Seafood.' Ironic that Neptune took everything back.", category: "culture" as const },
+    { name: "Flood Barrier Blueprint", lore: "Engineering plans for coastal barriers, approved but never built. Budget cuts, they said. Too expensive, they said.", category: "infrastructure" as const },
+    { name: "Smartphone", lore: "Its last text, unsent: 'The water's at the door. I love you all.' The message waits eternally in the outbox.", category: "personal" as const },
+    { name: "University Diploma", lore: "Degree in Environmental Science, 2066. The graduate dedicated their life to warning others. The warnings went unheeded.", category: "personal" as const },
+    { name: "Power Grid Relay", lore: "Component from the city's electrical network. It failed when seawater flooded the substations, plunging millions into darkness.", category: "infrastructure" as const },
+  ];
+
+  const artifacts: Artifact[] = [];
+  
+  for (let i = 0; i < artifactData.length; i++) {
+    let position: Position;
+    let posKey: string;
+    
+    do {
+      position = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+      };
+      posKey = `${position.x},${position.y}`;
+    } while (occupied.has(posKey));
+    
+    occupied.add(posKey);
+    
+    artifacts.push({
+      id: `artifact-${i}`,
+      position,
+      name: artifactData[i].name,
+      lore: artifactData[i].lore,
+      category: artifactData[i].category,
+      isCollected: false,
+      clueRevealed: false,
+    });
+  }
+  
+  return artifacts;
+};
+
 export const useGameStore = create<GameState>()(
-  subscribeWithSelector((set, get) => ({
+  subscribeWithSelector((set, get) => {
+    const { collectibles, artifacts } = createCollectiblesAndArtifacts();
+    
+    return {
     phase: "ready",
     
     player: createInitialPlayer(),
-    collectibles: createCollectibles(),
+    collectibles,
     collectedCount: 0,
     collectedItems: [],
+    artifacts,
     tiles: createInitialTiles(),
     
     currentPath: [],
@@ -233,6 +310,8 @@ export const useGameStore = create<GameState>()(
     
     isInventoryOpen: false,
     isShopOpen: false,
+    isArtifactLogOpen: false,
+    isArchivistOpen: false,
     activePowerUps: [],
     mapUnlocks: createMapUnlocks(),
     visionRadius: 5,
@@ -243,6 +322,8 @@ export const useGameStore = create<GameState>()(
     showCancelConfirmation: false,
     pendingTargetPosition: null,
     
+    archivistUnlocked: false,
+    
     start: () => {
       const initialPlayer = createInitialPlayer();
       set({ phase: "playing" });
@@ -252,12 +333,14 @@ export const useGameStore = create<GameState>()(
     
     restart: () => {
       const initialPlayer = createInitialPlayer();
+      const { collectibles, artifacts } = createCollectiblesAndArtifacts();
       set({
         phase: "ready",
         player: initialPlayer,
-        collectibles: createCollectibles(),
+        collectibles,
         collectedCount: 0,
         collectedItems: [],
+        artifacts,
         tiles: createInitialTiles(),
         currentPath: [],
         isMoving: false,
@@ -421,7 +504,77 @@ export const useGameStore = create<GameState>()(
       set(state => ({ 
         isShopOpen: !state.isShopOpen,
         isInventoryOpen: false,
+        isArtifactLogOpen: false,
+        isArchivistOpen: false,
       }));
+    },
+    
+    toggleArtifactLog: () => {
+      set(state => ({ 
+        isArtifactLogOpen: !state.isArtifactLogOpen,
+        isInventoryOpen: false,
+        isShopOpen: false,
+        isArchivistOpen: false,
+      }));
+    },
+    
+    toggleArchivist: () => {
+      set(state => ({ 
+        isArchivistOpen: !state.isArchivistOpen,
+        isInventoryOpen: false,
+        isShopOpen: false,
+        isArtifactLogOpen: false,
+      }));
+    },
+    
+    collectArtifact: (id: string) => {
+      const artifact = get().artifacts.find(a => a.id === id);
+      if (!artifact || artifact.isCollected) return;
+      
+      set(state => ({
+        artifacts: state.artifacts.map(a => 
+          a.id === id ? { ...a, isCollected: true } : a
+        ),
+      }));
+      
+      console.log(`Discovered artifact: ${artifact.name}`);
+      console.log(`Lore: ${artifact.lore}`);
+      
+      get().checkArchivistUnlock();
+    },
+    
+    purchaseArtifactClue: (artifactId: string) => {
+      const artifact = get().artifacts.find(a => a.id === artifactId);
+      if (!artifact || artifact.isCollected || artifact.clueRevealed) return false;
+      
+      const cost = 25;
+      
+      if (get().currency < cost) {
+        console.log(`Not enough currency! Need ${cost}, have ${get().currency}`);
+        return false;
+      }
+      
+      set(state => ({
+        currency: state.currency - cost,
+        artifacts: state.artifacts.map(a => 
+          a.id === artifactId ? { ...a, clueRevealed: true } : a
+        ),
+      }));
+      
+      get().revealTilesAround(artifact.position, 2);
+      
+      console.log(`Purchased clue for ${artifact.name}! Location revealed on map.`);
+      return true;
+    },
+    
+    checkArchivistUnlock: () => {
+      const collectedArtifacts = get().artifacts.filter(a => a.isCollected).length;
+      const totalUpgrades = Object.values(get().shipUpgrades).reduce((sum, level) => sum + level, 0);
+      
+      if (!get().archivistUnlocked && (collectedArtifacts >= 3 || totalUpgrades >= 8)) {
+        set({ archivistUnlocked: true });
+        console.log("🎉 The Archivist is now available at Watropolis Dockyard!");
+      }
     },
     
     getCurrency: () => {
@@ -637,5 +790,6 @@ export const useGameStore = create<GameState>()(
       console.log(`Upgraded ${upgradeType} to level ${currentLevel + 1} for ${cost} currency`);
       return true;
     },
-  }))
+  };
+  })
 );
