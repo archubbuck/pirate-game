@@ -10,6 +10,7 @@ export function CameraFollowPlayer() {
   const isCameraFollowing = useGameStore((state) => state.isCameraFollowing);
   const cameraOffset = useGameStore((state) => state.cameraOffset);
   const setCameraOffset = useGameStore((state) => state.setCameraOffset);
+  const zoomLevel = useGameStore((state) => state.zoomLevel);
   
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -67,7 +68,11 @@ export function CameraFollowPlayer() {
     const targetX = (player.visualPosition.x - gridSize / 2) * (tileSize + tileSpacing);
     const targetZ = (player.visualPosition.y - gridSize / 2) * (tileSize + tileSpacing);
     
-    const baseOffset = new THREE.Vector3(0, 35, 20);
+    const zoomFactor = zoomLevel / 100;
+    const baseHeight = 35 * zoomFactor;
+    const baseDistance = 20 * zoomFactor;
+    
+    const baseOffset = new THREE.Vector3(0, baseHeight, baseDistance);
     const panOffset = new THREE.Vector3(cameraOffset.x, 0, cameraOffset.z);
     
     let targetPosition: THREE.Vector3;

@@ -108,6 +108,7 @@ interface GameState {
   
   isCameraFollowing: boolean;
   cameraOffset: { x: number; z: number };
+  zoomLevel: number;
   
   start: () => void;
   restart: () => void;
@@ -139,6 +140,7 @@ interface GameState {
   
   toggleCameraFollow: () => void;
   setCameraOffset: (offset: { x: number; z: number }) => void;
+  setZoomLevel: (level: number) => void;
   
   startTravel: (duration: number) => void;
   startCollection: (itemId: string, duration: number) => void;
@@ -336,6 +338,7 @@ export const useGameStore = create<GameState>()(
     
     isCameraFollowing: true,
     cameraOffset: { x: 0, z: 0 },
+    zoomLevel: 100,
     
     start: () => {
       const initialPlayer = createInitialPlayer();
@@ -374,6 +377,7 @@ export const useGameStore = create<GameState>()(
         currency: 0,
         isCameraFollowing: true,
         cameraOffset: { x: 0, z: 0 },
+        zoomLevel: 100,
       });
       console.log("Game restarted");
     },
@@ -820,6 +824,10 @@ export const useGameStore = create<GameState>()(
         cameraOffset: offset,
         isCameraFollowing: false
       });
+    },
+    
+    setZoomLevel: (level: number) => {
+      set({ zoomLevel: Math.max(50, Math.min(200, level)) });
     },
   };
   })
