@@ -65,8 +65,8 @@ export function Game() {
       <Canvas
         shadows
         camera={{
-          position: [0, 35, 25],
-          fov: 60,
+          position: [0, 35, 20],
+          fov: 70,
           near: 0.1,
           far: 1000,
         }}

@@ -21,6 +21,8 @@ export function HUD() {
   const toggleArchivist = useGameStore((state) => state.toggleArchivist);
   const archivistUnlocked = useGameStore((state) => state.archivistUnlocked);
   const artifacts = useGameStore((state) => state.artifacts);
+  const isCameraFollowing = useGameStore((state) => state.isCameraFollowing);
+  const toggleCameraFollow = useGameStore((state) => state.toggleCameraFollow);
   const isMuted = useAudio((state) => state.isMuted);
   const toggleMute = useAudio((state) => state.toggleMute);
   
@@ -176,6 +178,17 @@ export function HUD() {
               className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-2 py-1 rounded text-sm transition-colors"
             >
               {isMuted ? "🔇" : "🔊"}
+            </button>
+            <button
+              onClick={toggleCameraFollow}
+              className={`px-3 py-1 rounded text-sm transition-colors ${
+                isCameraFollowing
+                  ? "bg-cyan-900/90 hover:bg-cyan-800/90 border border-cyan-600 text-cyan-200"
+                  : "bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white"
+              }`}
+              title={isCameraFollowing ? "Camera following ship" : "Free camera (right-click drag to pan)"}
+            >
+              {isCameraFollowing ? "📍 Follow" : "🗺️ Free"}
             </button>
             <button
               onClick={restart}

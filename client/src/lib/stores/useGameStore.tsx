@@ -106,6 +106,9 @@ interface GameState {
   
   archivistUnlocked: boolean;
   
+  isCameraFollowing: boolean;
+  cameraOffset: { x: number; z: number };
+  
   start: () => void;
   restart: () => void;
   end: () => void;
@@ -133,6 +136,9 @@ interface GameState {
   collectArtifact: (id: string) => void;
   purchaseArtifactClue: (artifactId: string) => boolean;
   checkArchivistUnlock: () => void;
+  
+  toggleCameraFollow: () => void;
+  setCameraOffset: (offset: { x: number; z: number }) => void;
   
   startTravel: (duration: number) => void;
   startCollection: (itemId: string, duration: number) => void;
@@ -327,6 +333,9 @@ export const useGameStore = create<GameState>()(
     pendingTargetPosition: null,
     
     archivistUnlocked: false,
+    
+    isCameraFollowing: true,
+    cameraOffset: { x: 0, z: 0 },
     
     start: () => {
       const initialPlayer = createInitialPlayer();
@@ -795,6 +804,20 @@ export const useGameStore = create<GameState>()(
       
       console.log(`Upgraded ${upgradeType} to level ${currentLevel + 1} for ${cost} currency`);
       return true;
+    },
+    
+    toggleCameraFollow: () => {
+      set(state => ({ 
+        isCameraFollowing: !state.isCameraFollowing,
+        cameraOffset: state.isCameraFollowing ? state.cameraOffset : { x: 0, z: 0 }
+      }));
+    },
+    
+    setCameraOffset: (offset: { x: number; z: number }) => {
+      set({ 
+        cameraOffset: offset,
+        isCameraFollowing: false
+      });
     },
   };
   })
