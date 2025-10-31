@@ -827,7 +827,7 @@ export const useGameStore = create<GameState>()(
     },
     
     setZoomLevel: (level: number) => {
-      set({ zoomLevel: Math.max(50, Math.min(200, level)) });
+      set({ zoomLevel: Math.max(50, Math.min(600, level)) });
     },
   };
   })
