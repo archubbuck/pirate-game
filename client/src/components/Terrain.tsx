@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useGameStore, type Tile } from "@/lib/stores/useGameStore";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 export function Terrain() {
@@ -9,9 +10,21 @@ export function Terrain() {
   const setTargetPositionWithConfirmation = useGameStore((state) => state.setTargetPositionWithConfirmation);
   const phase = useGameStore((state) => state.phase);
   const player = useGameStore((state) => state.player);
+  
+  const waterMaterialRefs = useRef<Map<string, THREE.MeshStandardMaterial>>(new Map());
 
   const tileSize = 1;
   const tileSpacing = 0.02;
+  
+  useFrame((state) => {
+    const time = state.clock.getElapsedTime();
+    waterMaterialRefs.current.forEach((material) => {
+      if (material.emissiveIntensity !== undefined) {
+        const wave = Math.sin(time * 0.5) * 0.1 + 0.1;
+        material.emissiveIntensity = wave;
+      }
+    });
+  });
 
   const octagonShape = useMemo(() => {
     const shape = new THREE.Shape();
@@ -35,12 +48,12 @@ export function Terrain() {
   }, [tileSize]);
 
   const tileColors = useMemo(() => {
-    const grayShades = ['#8a9ba8', '#9ba8b2', '#aab5be', '#b5bec5', '#c5ccd1', '#999999', '#aaaaaa', '#bbbbbb'];
+    const waterShades = ['#0a4d68', '#0d5a7a', '#106785', '#15729e', '#1a7fb3', '#0c5d7f', '#0e6691'];
     const colors: string[][] = [];
     for (let y = 0; y < gridSize; y++) {
       colors[y] = [];
       for (let x = 0; x < gridSize; x++) {
-        colors[y][x] = grayShades[Math.floor(Math.random() * grayShades.length)];
+        colors[y][x] = waterShades[Math.floor(Math.random() * waterShades.length)];
       }
     }
     return colors;
@@ -89,6 +102,8 @@ export function Terrain() {
             borderColor = "#4a9eff";
           }
           
+          const materialKey = `${x}-${y}`;
+          
           return (
             <group key={`${x}-${y}`} position={[posX, 0.01, posZ]}>
               <mesh
@@ -100,11 +115,16 @@ export function Terrain() {
               >
                 <shapeGeometry args={[octagonShape]} />
                 <meshStandardMaterial
+                  ref={(material) => {
+                    if (material) waterMaterialRefs.current.set(materialKey, material);
+                  }}
                   color={baseColor}
                   opacity={opacity}
                   transparent={!tile.isExplored}
-                  emissive={tile.isHighlighted && tile.isExplored ? "#1a3a5a" : "#000000"}
-                  emissiveIntensity={tile.isHighlighted && tile.isExplored ? 0.3 : 0}
+                  emissive={tile.isHighlighted && tile.isExplored ? "#2a6a8a" : "#0a2a3a"}
+                  emissiveIntensity={tile.isHighlighted && tile.isExplored ? 0.4 : 0.1}
+                  metalness={0.6}
+                  roughness={0.3}
                 />
               </mesh>
               
