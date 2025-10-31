@@ -6,6 +6,8 @@ import { MovementController } from "./MovementController";
 import { MagnetEffect } from "./MagnetEffect";
 import { CameraFollowPlayer } from "./CameraFollowPlayer";
 import { DynamicLight } from "./DynamicLight";
+import { TravelIndicator } from "./TravelIndicator";
+import { CollectionIndicator } from "./CollectionIndicator";
 import { HUD } from "./HUD";
 import { Inventory } from "./Inventory";
 import { Shop } from "./Shop";
@@ -34,6 +36,8 @@ function Scene() {
         <Collectible key={collectible.id} collectible={collectible} />
       ))}
       
+      <TravelIndicator />
+      <CollectionIndicator />
       <MovementController />
       <MagnetEffect />
       <CameraFollowPlayer />
