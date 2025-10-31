@@ -11,6 +11,7 @@ import { CollectionIndicator } from "./CollectionIndicator";
 import { HUD } from "./HUD";
 import { Inventory } from "./Inventory";
 import { Shop } from "./Shop";
+import { CancelCollectionDialog } from "./CancelCollectionDialog";
 import { KeyboardListener } from "./KeyboardListener";
 import { MobileControls } from "./MobileControls";
 import { useGameStore } from "@/lib/stores/useGameStore";
@@ -68,6 +69,7 @@ export function Game() {
       <HUD />
       <Inventory />
       <Shop />
+      <CancelCollectionDialog />
       <KeyboardListener />
       <MobileControls />
     </div>

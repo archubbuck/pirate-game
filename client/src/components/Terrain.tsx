@@ -6,7 +6,7 @@ export function Terrain() {
   const tiles = useGameStore((state) => state.tiles);
   const gridSize = useGameStore((state) => state.gridSize);
   const setHoveredTile = useGameStore((state) => state.setHoveredTile);
-  const setTargetPosition = useGameStore((state) => state.setTargetPosition);
+  const setTargetPositionWithConfirmation = useGameStore((state) => state.setTargetPositionWithConfirmation);
   const phase = useGameStore((state) => state.phase);
   const player = useGameStore((state) => state.player);
 
@@ -49,7 +49,7 @@ export function Terrain() {
   const handleTileClick = (x: number, y: number) => {
     if (phase !== "playing") return;
     
-    setTargetPosition({ x, y });
+    setTargetPositionWithConfirmation({ x, y });
     console.log(`Target set to (${x}, ${y})`);
   };
 

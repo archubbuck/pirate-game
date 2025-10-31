@@ -86,11 +86,17 @@ interface GameState {
   shipUpgrades: ShipUpgrade;
   currency: number;
   
+  showCancelConfirmation: boolean;
+  pendingTargetPosition: Position | null;
+  
   start: () => void;
   restart: () => void;
   end: () => void;
   
   setTargetPosition: (position: Position | null) => void;
+  setTargetPositionWithConfirmation: (position: Position | null) => void;
+  confirmCancelCollection: () => void;
+  dismissCancelConfirmation: () => void;
   updatePlayerPosition: (position: Position) => void;
   updateVisualPosition: (x: number, y: number) => void;
   setPath: (path: Position[]) => void;
@@ -234,6 +240,9 @@ export const useGameStore = create<GameState>()(
     shipUpgrades: createInitialShipUpgrades(),
     currency: 0,
     
+    showCancelConfirmation: false,
+    pendingTargetPosition: null,
+    
     start: () => {
       const initialPlayer = createInitialPlayer();
       set({ phase: "playing" });
@@ -278,6 +287,34 @@ export const useGameStore = create<GameState>()(
     
     setTargetPosition: (position: Position | null) => {
       set({ targetPosition: position });
+    },
+    
+    setTargetPositionWithConfirmation: (position: Position | null) => {
+      if (get().isCollecting) {
+        set({ 
+          showCancelConfirmation: true,
+          pendingTargetPosition: position 
+        });
+      } else {
+        set({ targetPosition: position });
+      }
+    },
+    
+    confirmCancelCollection: () => {
+      const pendingTarget = get().pendingTargetPosition;
+      get().cancelCollection();
+      set({ 
+        showCancelConfirmation: false,
+        targetPosition: pendingTarget,
+        pendingTargetPosition: null 
+      });
+    },
+    
+    dismissCancelConfirmation: () => {
+      set({ 
+        showCancelConfirmation: false,
+        pendingTargetPosition: null 
+      });
     },
     
     updatePlayerPosition: (position: Position) => {
