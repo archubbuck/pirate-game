@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
 import { useGameStore, type Position } from "@/lib/stores/useGameStore";
 
 interface PathNode {
@@ -10,7 +9,7 @@ interface PathNode {
   parent: PathNode | null;
 }
 
-function findPath(start: Position, end: Position, gridSize: number): Position[] {
+function findPath(start: Position, end: Position, gridSize: number, tiles: any[][]): Position[] {
   const openSet: PathNode[] = [];
   const closedSet: Set<string> = new Set();
   
@@ -67,6 +66,11 @@ function findPath(start: Position, end: Position, gridSize: number): Position[] 
         continue;
       }
       
+      const tile = tiles[neighbor.y]?.[neighbor.x];
+      if (!tile || !tile.isWalkable) {
+        continue;
+      }
+      
       const neighborKey = posKey(neighbor);
       if (closedSet.has(neighborKey)) continue;
       
@@ -108,12 +112,14 @@ export function MovementController() {
   const isMoving = useGameStore((state) => state.isMoving);
   const isCollecting = useGameStore((state) => state.isCollecting);
   const gridSize = useGameStore((state) => state.gridSize);
+  const tiles = useGameStore((state) => state.tiles);
   const collectibles = useGameStore((state) => state.collectibles);
   const artifacts = useGameStore((state) => state.artifacts);
   const setPath = useGameStore((state) => state.setPath);
   const setIsMoving = useGameStore((state) => state.setIsMoving);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
   const updateVisualPosition = useGameStore((state) => state.updateVisualPosition);
+  const setPlayerRotation = useGameStore((state) => state.setPlayerRotation);
   const setTargetPosition = useGameStore((state) => state.setTargetPosition);
   const highlightPath = useGameStore((state) => state.highlightPath);
   const clearHighlights = useGameStore((state) => state.clearHighlights);
@@ -128,13 +134,14 @@ export function MovementController() {
   const collectArtifact = useGameStore((state) => state.collectArtifact);
   
   const movementProgress = useRef(0);
+  const lastTime = useRef(performance.now());
   const baseSpeed = 3;
   const hasSpeedBoost = activePowerUps.some(p => p.type === "speed");
   const moveSpeed = hasSpeedBoost ? baseSpeed * 1.5 : baseSpeed;
   
   useEffect(() => {
     if (targetPosition && !isMoving && !isCollecting) {
-      const path = findPath(player.position, targetPosition, gridSize);
+      const path = findPath(player.position, targetPosition, gridSize, tiles);
       
       if (path.length > 0) {
         const distance = path.length;
@@ -152,66 +159,97 @@ export function MovementController() {
     }
   }, [targetPosition, player.position, isMoving, isCollecting, gridSize, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
   
-  useFrame((state, delta) => {
-    if (isCollecting && collectionStartTime && collectionDuration) {
-      const elapsed = Date.now() - collectionStartTime;
-      if (elapsed >= collectionDuration) {
-        completeCollection();
+  useEffect(() => {
+    let animationFrameId: number;
+    
+    const animate = () => {
+      const now = performance.now();
+      const delta = (now - lastTime.current) / 1000;
+      lastTime.current = now;
+      
+      const state = useGameStore.getState();
+      
+      if (state.isCollecting && state.collectionStartTime && state.collectionDuration) {
+        const elapsed = Date.now() - state.collectionStartTime;
+        if (elapsed >= state.collectionDuration) {
+          completeCollection();
+        }
+        animationFrameId = requestAnimationFrame(animate);
+        return;
       }
-      return;
-    }
-    
-    if (!isMoving || currentPath.length === 0) return;
-    
-    movementProgress.current += delta * moveSpeed;
-    
-    const nextPosition = currentPath[0];
-    const t = Math.min(movementProgress.current, 1);
-    
-    const currentX = player.position.x;
-    const currentY = player.position.y;
-    const targetX = nextPosition.x;
-    const targetY = nextPosition.y;
-    
-    const visualX = currentX + (targetX - currentX) * t;
-    const visualY = currentY + (targetY - currentY) * t;
-    
-    updateVisualPosition(visualX, visualY);
-    
-    if (movementProgress.current >= 1) {
-      updatePlayerPosition(nextPosition);
       
-      const remainingPath = currentPath.slice(1);
-      setPath(remainingPath);
+      if (!state.isMoving || state.currentPath.length === 0) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
       
-      if (remainingPath.length === 0) {
-        setIsMoving(false);
-        clearHighlights();
-        console.log("Destination reached");
+      movementProgress.current += delta * moveSpeed;
+      
+      const nextPosition = state.currentPath[0];
+      const t = Math.min(movementProgress.current, 1);
+      
+      const currentX = state.player.position.x;
+      const currentY = state.player.position.y;
+      const targetX = nextPosition.x;
+      const targetY = nextPosition.y;
+      
+      const visualX = currentX + (targetX - currentX) * t;
+      const visualY = currentY + (targetY - currentY) * t;
+      
+      updateVisualPosition(visualX, visualY);
+      
+      const dx = targetX - currentX;
+      const dy = targetY - currentY;
+      if (dx !== 0 || dy !== 0) {
+        const rotation = Math.atan2(dy, dx) + Math.PI / 2;
+        setPlayerRotation(rotation);
+      }
+      
+      if (movementProgress.current >= 1) {
+        updatePlayerPosition(nextPosition);
         
-        const artifact = artifacts.find(
-          a => !a.isCollected && a.position.x === nextPosition.x && a.position.y === nextPosition.y
-        );
+        const remainingPath = state.currentPath.slice(1);
+        setPath(remainingPath);
         
-        if (artifact) {
-          collectArtifact(artifact.id);
-        } else {
-          const collectible = collectibles.find(
-            c => c.position.x === nextPosition.x && c.position.y === nextPosition.y
+        if (remainingPath.length === 0) {
+          setIsMoving(false);
+          clearHighlights();
+          console.log("Destination reached");
+          
+          const artifact = state.artifacts.find(
+            a => !a.isCollected && a.position.x === nextPosition.x && a.position.y === nextPosition.y
           );
           
-          if (collectible) {
-            const estimatedTime = getEstimatedCollectionTime(collectible.collectionTime);
-            startCollection(collectible.id, estimatedTime);
+          if (artifact) {
+            collectArtifact(artifact.id);
+          } else {
+            const collectible = state.collectibles.find(
+              c => c.position.x === nextPosition.x && c.position.y === nextPosition.y
+            );
+            
+            if (collectible) {
+              const estimatedTime = getEstimatedCollectionTime(collectible.collectionTime);
+              startCollection(collectible.id, estimatedTime);
+            }
           }
+        } else {
+          highlightPath(remainingPath);
         }
-      } else {
-        highlightPath(remainingPath);
+        
+        movementProgress.current = 0;
       }
       
-      movementProgress.current = 0;
-    }
-  });
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    animationFrameId = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isMoving, isCollecting, collectionStartTime, collectionDuration, currentPath, player, moveSpeed, updateVisualPosition, setPlayerRotation, updatePlayerPosition, setPath, setIsMoving, clearHighlights, collectArtifact, startCollection, getEstimatedCollectionTime, highlightPath, completeCollection, artifacts, collectibles]);
   
   return null;
 }

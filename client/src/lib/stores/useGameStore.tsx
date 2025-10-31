@@ -65,14 +65,50 @@ export interface Tile {
   isHighlighted: boolean;
 }
 
+export interface Island {
+  id: string;
+  positions: Position[];
+  resources: {
+    [key: string]: number;
+  };
+}
+
+export interface EnemyShip {
+  id: string;
+  position: Position;
+  visualPosition: { x: number; y: number };
+  rotation: number;
+  health: number;
+  maxHealth: number;
+  loot: {
+    [key: string]: number;
+  };
+  currentPath: Position[];
+  moveSpeed: number;
+  nextMoveTime: number;
+}
+
+export interface CombatState {
+  isInCombat: boolean;
+  enemyId: string | null;
+  combatStartTime: number | null;
+  combatDuration: number;
+  combatProgress: number;
+}
+
 interface GameState {
   phase: GamePhase;
   
   player: Player;
+  playerRotation: number;
   collectibles: Collectible[];
   collectedCount: number;
   collectedItems: CollectedItem[];
   artifacts: Artifact[];
+  islands: Island[];
+  selectedIsland: Island | null;
+  enemyShips: EnemyShip[];
+  combatState: CombatState;
   tiles: Tile[][];
   
   currentPath: Position[];
@@ -120,9 +156,19 @@ interface GameState {
   dismissCancelConfirmation: () => void;
   updatePlayerPosition: (position: Position) => void;
   updateVisualPosition: (x: number, y: number) => void;
+  setPlayerRotation: (rotation: number) => void;
   setPath: (path: Position[]) => void;
   setIsMoving: (isMoving: boolean) => void;
   collectItem: (id: string) => void;
+  
+  setSelectedIsland: (island: Island | null) => void;
+  updateIsland: (island: Island) => void;
+  
+  updateEnemyShip: (ship: EnemyShip) => void;
+  removeEnemyShip: (id: string) => void;
+  startCombat: (enemyId: string) => void;
+  updateCombatProgress: (progress: number) => void;
+  completeCombat: () => void;
   
   toggleInventory: () => void;
   toggleShop: () => void;
@@ -185,9 +231,11 @@ const createInitialPlayer = (): Player => ({
   visualPosition: { x: 20, y: 20 },
 });
 
-const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifacts: Artifact[] } => {
+const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifacts: Artifact[], islands: Island[] } => {
   const occupied = new Set<string>();
   occupied.add("20,20");
+  
+  const islands = createIslands(occupied);
   
   const collectibles: Collectible[] = [];
   const types: ("timber" | "alloy" | "circuit" | "biofiber")[] = ["timber", "alloy", "circuit", "biofiber"];
@@ -220,7 +268,7 @@ const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifa
   
   const artifacts = createArtifacts(occupied);
   
-  return { collectibles, artifacts };
+  return { collectibles, artifacts, islands };
 };
 
 const createMapUnlocks = (): MapUnlock[] => [
@@ -236,6 +284,65 @@ const createInitialShipUpgrades = (): ShipUpgrade => ({
   salvageRig: 1,
   cargoHold: 1,
 });
+
+const createIslands = (occupied: Set<string>): Island[] => {
+  const islands: Island[] = [];
+  const islandCount = 8;
+  const types: ("timber" | "alloy" | "circuit" | "biofiber")[] = ["timber", "alloy", "circuit", "biofiber"];
+  
+  for (let i = 0; i < islandCount; i++) {
+    const width = Math.floor(Math.random() * 3) + 3;
+    const height = Math.floor(Math.random() * 3) + 3;
+    
+    let startX: number;
+    let startY: number;
+    let canPlace = false;
+    let attempts = 0;
+    
+    do {
+      startX = Math.floor(Math.random() * (GRID_SIZE - width));
+      startY = Math.floor(Math.random() * (GRID_SIZE - height));
+      
+      canPlace = true;
+      for (let y = startY; y < startY + height && canPlace; y++) {
+        for (let x = startX; x < startX + width && canPlace; x++) {
+          if (occupied.has(`${x},${y}`)) {
+            canPlace = false;
+          }
+        }
+      }
+      
+      attempts++;
+      if (attempts > 100) break;
+    } while (!canPlace);
+    
+    if (!canPlace) continue;
+    
+    const positions: Position[] = [];
+    for (let y = startY; y < startY + height; y++) {
+      for (let x = startX; x < startX + width; x++) {
+        positions.push({ x, y });
+        occupied.add(`${x},${y}`);
+      }
+    }
+    
+    const resourceCount = Math.floor(Math.random() * 3) + 1;
+    const resources: Island["resources"] = {};
+    for (let r = 0; r < resourceCount; r++) {
+      const type = types[Math.floor(Math.random() * types.length)];
+      const quantity = Math.floor(Math.random() * 5) + 2;
+      resources[type] = (resources[type] || 0) + quantity;
+    }
+    
+    islands.push({
+      id: `island-${i}`,
+      positions,
+      resources,
+    });
+  }
+  
+  return islands;
+};
 
 const createArtifacts = (occupied: Set<string>): Artifact[] => {
   const artifactData = [
@@ -291,19 +398,85 @@ const createArtifacts = (occupied: Set<string>): Artifact[] => {
   return artifacts;
 };
 
+const createEnemyShips = (occupied: Set<string>): EnemyShip[] => {
+  const enemyShips: EnemyShip[] = [];
+  const enemyCount = 5;
+  const types: ("timber" | "alloy" | "circuit" | "biofiber")[] = ["timber", "alloy", "circuit", "biofiber"];
+  
+  for (let i = 0; i < enemyCount; i++) {
+    let position: Position;
+    let posKey: string;
+    
+    do {
+      position = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+      };
+      posKey = `${position.x},${position.y}`;
+    } while (occupied.has(posKey));
+    
+    occupied.add(posKey);
+    
+    const loot: { [key: string]: number } = {};
+    const lootCount = Math.floor(Math.random() * 2) + 1;
+    for (let l = 0; l < lootCount; l++) {
+      const type = types[Math.floor(Math.random() * types.length)];
+      const quantity = Math.floor(Math.random() * 3) + 1;
+      loot[type] = (loot[type] || 0) + quantity;
+    }
+    
+    enemyShips.push({
+      id: `enemy-${i}`,
+      position,
+      visualPosition: { x: position.x, y: position.y },
+      rotation: Math.random() * Math.PI * 2,
+      health: 100,
+      maxHealth: 100,
+      loot,
+      currentPath: [],
+      moveSpeed: 0.5,
+      nextMoveTime: Date.now() + Math.random() * 5000 + 3000,
+    });
+  }
+  
+  return enemyShips;
+};
+
 export const useGameStore = create<GameState>()(
   subscribeWithSelector((set, get) => {
-    const { collectibles, artifacts } = createCollectiblesAndArtifacts();
+    const { collectibles, artifacts, islands } = createCollectiblesAndArtifacts();
+    const tiles = createInitialTiles();
+    const occupied = new Set<string>();
+    const enemyShips = createEnemyShips(occupied);
+    
+    islands.forEach(island => {
+      island.positions.forEach(pos => {
+        if (tiles[pos.y] && tiles[pos.y][pos.x]) {
+          tiles[pos.y][pos.x].isWalkable = false;
+        }
+      });
+    });
     
     return {
     phase: "ready",
     
     player: createInitialPlayer(),
+    playerRotation: 0,
     collectibles,
     collectedCount: 0,
     collectedItems: [],
     artifacts,
-    tiles: createInitialTiles(),
+    islands,
+    selectedIsland: null,
+    enemyShips,
+    combatState: {
+      isInCombat: false,
+      enemyId: null,
+      combatStartTime: null,
+      combatDuration: 5000,
+      combatProgress: 0,
+    },
+    tiles,
     
     currentPath: [],
     isMoving: false,
@@ -349,15 +522,38 @@ export const useGameStore = create<GameState>()(
     
     restart: () => {
       const initialPlayer = createInitialPlayer();
-      const { collectibles, artifacts } = createCollectiblesAndArtifacts();
+      const { collectibles, artifacts, islands } = createCollectiblesAndArtifacts();
+      const tiles = createInitialTiles();
+      const occupied = new Set<string>();
+      const enemyShips = createEnemyShips(occupied);
+      
+      islands.forEach(island => {
+        island.positions.forEach(pos => {
+          if (tiles[pos.y] && tiles[pos.y][pos.x]) {
+            tiles[pos.y][pos.x].isWalkable = false;
+          }
+        });
+      });
+      
       set({
         phase: "ready",
         player: initialPlayer,
+        playerRotation: 0,
         collectibles,
         collectedCount: 0,
         collectedItems: [],
         artifacts,
-        tiles: createInitialTiles(),
+        islands,
+        selectedIsland: null,
+        enemyShips,
+        combatState: {
+          isInCombat: false,
+          enemyId: null,
+          combatStartTime: null,
+          combatDuration: 5000,
+          combatProgress: 0,
+        },
+        tiles,
         currentPath: [],
         isMoving: false,
         targetPosition: null,
@@ -440,6 +636,10 @@ export const useGameStore = create<GameState>()(
       }));
     },
     
+    setPlayerRotation: (rotation: number) => {
+      set({ playerRotation: rotation });
+    },
+    
     setPath: (path: Position[]) => {
       set({ currentPath: path });
     },
@@ -510,6 +710,82 @@ export const useGameStore = create<GameState>()(
     
     setHoveredTile: (position: Position | null) => {
       set({ hoveredTile: position });
+    },
+    
+    setSelectedIsland: (island: Island | null) => {
+      set({ selectedIsland: island });
+    },
+    
+    updateIsland: (island: Island) => {
+      set(state => ({
+        islands: state.islands.map(i => i.id === island.id ? island : i)
+      }));
+    },
+    
+    updateEnemyShip: (ship: EnemyShip) => {
+      set(state => ({
+        enemyShips: state.enemyShips.map(s => s.id === ship.id ? ship : s)
+      }));
+    },
+    
+    removeEnemyShip: (id: string) => {
+      set(state => ({
+        enemyShips: state.enemyShips.filter(s => s.id !== id)
+      }));
+    },
+    
+    startCombat: (enemyId: string) => {
+      const enemy = get().enemyShips.find(s => s.id === enemyId);
+      if (!enemy || get().combatState.isInCombat) return;
+      
+      set({
+        combatState: {
+          isInCombat: true,
+          enemyId,
+          combatStartTime: Date.now(),
+          combatDuration: 5000,
+          combatProgress: 0,
+        }
+      });
+    },
+    
+    updateCombatProgress: (progress: number) => {
+      set(state => ({
+        combatState: {
+          ...state.combatState,
+          combatProgress: progress,
+        }
+      }));
+    },
+    
+    completeCombat: () => {
+      const { combatState, enemyShips } = get();
+      if (!combatState.isInCombat || !combatState.enemyId) return;
+      
+      const enemy = enemyShips.find(s => s.id === combatState.enemyId);
+      if (enemy) {
+        Object.entries(enemy.loot).forEach(([type, quantity]) => {
+          for (let i = 0; i < quantity; i++) {
+            get().collectedItems.push({
+              id: `${type}-${Date.now()}-${i}`,
+              type: type as "timber" | "alloy" | "circuit" | "biofiber",
+            });
+          }
+        });
+        
+        get().removeEnemyShip(enemy.id);
+        console.log(`Defeated enemy ship! Collected:`, enemy.loot);
+      }
+      
+      set({
+        combatState: {
+          isInCombat: false,
+          enemyId: null,
+          combatStartTime: null,
+          combatDuration: 5000,
+          combatProgress: 0,
+        }
+      });
     },
     
     toggleInventory: () => {
@@ -702,7 +978,7 @@ export const useGameStore = create<GameState>()(
     },
     
     getTravelTime: (distance: number) => {
-      const baseSpeed = 1000;
+      const baseSpeed = 2000;
       const engineLevel = get().shipUpgrades.engine;
       const speedBoost = get().activePowerUps.some(p => p.type === "speed") ? 0.5 : 1;
       return (distance * baseSpeed) / engineLevel * speedBoost;
