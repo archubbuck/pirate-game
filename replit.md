@@ -1,8 +1,43 @@
-# Fight Simulator - Replit Project
+# Watropolis Salvage - Replit Project
 
 ## Overview
 
-This is a tactical turn-based combat game built with React Three Fiber (3D graphics), Express backend, and PostgreSQL database. Players engage in strategic combat on an octagonal grid against AI opponents. The game features a 3D-rendered battlefield, turn-based mechanics with energy management, and audio feedback.
+This is a post-apocalyptic salvage exploration game built with React Three Fiber (3D graphics), Express backend, and PostgreSQL database. Players captain a salvage vessel operating from Watropolis, a floating city built by survivors 60 years after massive volcanic eruptions triggered catastrophic sea level rise. The game features strategic resource gathering, ship upgrades, fog of war exploration on a 40x40 grid, and time-based collection mechanics.
+
+## Recent Changes (October 31, 2025)
+
+### Watropolis Theme Implementation
+- Complete rebranding from generic explorer game to post-apocalyptic salvage vessel theme
+- Opening narrative explaining volcanic eruptions, ice cap melting, and Watropolis founding
+- Resource system renamed: Timber Salvage, Alloy Scrap, Circuit Relics, Biofibers
+- All UI components updated with salvage/maritime theming
+
+### Travel & Collection Mechanics
+- Travel time calculation based on distance and engine upgrade level
+- Real-time ETA indicator displayed above ship during travel
+- Collection time varies by tile richness (richer tiles = longer collection)
+- Collection progress bar with time remaining displayed above ship
+- Collection interruption system with confirmation dialog to prevent accidental resource forfeiture
+
+### Ship Upgrade System
+- **Engine Upgrade**: Increases travel speed between tiles
+- **Scanner Upgrade**: Improves collection time estimate accuracy (60% at level 1, 100% at level 5)
+- **Salvage Rig Upgrade**: Faster material collection
+- **Cargo Hold Upgrade**: Increases cargo capacity (+5 per level, base 10)
+
+### Economy & Progression
+- Currency system separate from collected materials
+- Cargo capacity limits enforced during collection
+- "Sell All Cargo" functionality at Watropolis Dockyard
+- Ship upgrades cost scales with current level (level × 50 currency)
+- Sea route unlocks to explore new regions of the map
+
+### UI Components
+- **HUD**: Shows cargo capacity, currency, travel/collection status, power-ups
+- **Cargo Hold** (Inventory): Displays collected materials with sell functionality
+- **Watropolis Dockyard** (Shop): Three sections - Ship Upgrades, Power-Ups, Sea Route Unlocks
+- **Cancel Collection Dialog**: Warns players about forfeiting resources mid-collection
+- **Travel/Collection Indicators**: Real-time overlays above ship showing ETA and progress
 
 ## User Preferences
 
@@ -22,23 +57,38 @@ Preferred communication style: Simple, everyday language.
 
 **State Management:**
 - **Zustand** with subscribeWithSelector middleware for global state
-- Separate stores for different concerns:
-  - `useFightSimulator`: Core game logic, entities, tiles, turn management
-  - `useGame`: High-level game phase control (ready/playing/ended)
-  - `useAudio`: Sound effects and music management
+- Main store: `useGameStore` - Comprehensive game logic including:
+  - Player movement and pathfinding (A* algorithm)
+  - Resource collection with time-based mechanics
+  - Ship upgrades and progression
+  - Cargo capacity and currency management
+  - Fog of war exploration system
+  - Power-up activation and timing
+- Audio store: `useAudio` - Sound effects and music management
 
 **Key Design Patterns:**
-- Component-based 3D scene composition (Scene, Terrain, Player, Enemy components)
-- Custom hooks for responsive design (`useIsMobile`)
+- Component-based 3D scene composition (Scene, Terrain, Player, Collectible components)
+- Real-time 3D indicators using HTML overlays (TravelIndicator, CollectionIndicator)
+- Confirmation dialogs for destructive actions (CancelCollectionDialog)
 - Separation of game logic from rendering
 - HUD overlay for game UI while 3D canvas runs fullscreen
 
 **3D Rendering:**
-- Octagonal grid-based terrain system
+- Octagonal grid-based terrain system (40x40)
+- A* pathfinding with diagonal movement
 - Real-time animations using `useFrame` hook
-- Post-processing effects via @react-three/postprocessing
-- GLSL shader support for custom visual effects
-- OrbitControls for camera manipulation
+- Fog of war with gradual exploration
+- Dynamic lighting system
+- HTML overlays for in-world UI elements (@react-three/drei)
+
+**Game Mechanics:**
+- **Movement**: Click-to-move with A* pathfinding, path highlighting
+- **Travel Time**: Distance-based with engine upgrade scaling
+- **Collection**: Time-based with richness variation (3-9 seconds base)
+- **Scanner Accuracy**: Collection time estimates improve with upgrades (60-100%)
+- **Cargo Management**: Capacity limits, sell-all functionality at Watropolis
+- **Ship Upgrades**: Permanent improvements to speed, accuracy, collection rate, capacity
+- **Power-Ups**: Temporary boosts (Afterburner Rig, Sonar Beacon, Grapple Winch)
 
 ### Backend Architecture
 
@@ -113,6 +163,7 @@ Preferred communication style: Simple, everyday language.
 - **@tanstack/react-query**: Server state management and caching
 - **Radix UI**: Complete suite of accessible UI primitives (accordion, dialog, dropdown, etc.)
 - **Three.js ecosystem**: 3D rendering and scene management
+- **@react-three/drei**: Helper components for R3F (Html, OrbitControls, etc.)
 - **Drizzle**: ORM and query builder
 - **Zod**: Runtime type validation
 - **date-fns**: Date manipulation utilities
@@ -133,3 +184,20 @@ Preferred communication style: Simple, everyday language.
 - `@/*`: Client source files (`./client/src/*`)
 - `@shared/*`: Shared types and schemas (`./shared/*`)
 - Configured in both tsconfig.json and vite.config.ts
+
+## Future Planned Features
+
+### Artifact System
+- 15-20 rare artifacts with unique pre-flood lore
+- Scattered across the map, separate from resource tiles
+- Collection triggers story snippets about the Old World
+
+### The Archivist NPC
+- NPC system in Watropolis
+- Dialogue interface for purchasing artifact location clues
+- Unlocked after milestone achievements (e.g., collecting X resources, upgrading ship)
+
+### Reconstruction Projects
+- Long-term goals: Harbor Foundry, Archive Spire, Weather Ward
+- Require large resource investments
+- Unlock new abilities or story elements when completed
