@@ -372,6 +372,8 @@ export const useGameStore = create<GameState>()(
         visionRadius: 5,
         shipUpgrades: createInitialShipUpgrades(),
         currency: 0,
+        isCameraFollowing: true,
+        cameraOffset: { x: 0, z: 0 },
       });
       console.log("Game restarted");
     },
