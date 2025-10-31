@@ -17,12 +17,17 @@ export function HUD() {
   const travelStartTime = useGameStore((state) => state.travelStartTime);
   const travelDuration = useGameStore((state) => state.travelDuration);
   const isMoving = useGameStore((state) => state.isMoving);
+  const toggleArtifactLog = useGameStore((state) => state.toggleArtifactLog);
+  const toggleArchivist = useGameStore((state) => state.toggleArchivist);
+  const archivistUnlocked = useGameStore((state) => state.archivistUnlocked);
+  const artifacts = useGameStore((state) => state.artifacts);
   const isMuted = useAudio((state) => state.isMuted);
   const toggleMute = useAudio((state) => state.toggleMute);
   
   const totalCollectibles = collectedCount + collectibles.length;
   const cargoCount = getCargoCount();
   const maxCargo = getMaxCargo();
+  const collectedArtifacts = artifacts.filter(a => a.isCollected).length;
   
   const powerUpIcons: Record<string, string> = {
     speed: "⚡",
@@ -178,6 +183,23 @@ export function HUD() {
             >
               ↻
             </button>
+          </div>
+          
+          <div className="absolute bottom-2 right-2 flex gap-1">
+            <button
+              onClick={toggleArtifactLog}
+              className="bg-cyan-900/90 hover:bg-cyan-800/90 border border-cyan-600 text-cyan-200 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1"
+            >
+              📖 Artifacts ({collectedArtifacts})
+            </button>
+            {archivistUnlocked && (
+              <button
+                onClick={toggleArchivist}
+                className="bg-purple-900/90 hover:bg-purple-800/90 border border-purple-600 text-purple-200 px-3 py-1 rounded text-sm transition-colors"
+              >
+                🔮 Archivist
+              </button>
+            )}
           </div>
         </>
       )}

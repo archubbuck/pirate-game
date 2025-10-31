@@ -49,8 +49,10 @@ export interface Artifact {
   id: string;
   position: Position;
   name: string;
+  description: string;
   lore: string;
-  category: "technology" | "culture" | "infrastructure" | "personal";
+  category: "technology" | "culture" | "infrastructure" | "personal" | "nature";
+  rarity: "common" | "uncommon" | "rare";
   isCollected: boolean;
   clueRevealed: boolean;
 }
@@ -229,24 +231,24 @@ const createInitialShipUpgrades = (): ShipUpgrade => ({
 
 const createArtifacts = (occupied: Set<string>): Artifact[] => {
   const artifactData = [
-    { name: "Server Rack Fragment", lore: "A twisted piece of metal bearing faded corporate logos. Once housed the digital memories of millions, now a corroded monument to lost connectivity.", category: "technology" as const },
-    { name: "Subway Token", lore: "A brass token from the Metro Transit Authority, dated 2065. The inscription reads 'Your journey continues.' It didn't.", category: "personal" as const },
-    { name: "Wedding Photo Album", lore: "Water-damaged photos of celebrations under blue skies. The final page shows a beachside ceremony—the same beach now 200 feet underwater.", category: "personal" as const },
-    { name: "Traffic Light Controller", lore: "An electronic box that once orchestrated vehicle flow through busy intersections. Its last command was eternal red.", category: "infrastructure" as const },
-    { name: "Museum Plaque", lore: "Bronze plaque: 'The Age of Oil: 1850-2070.' Someone scratched underneath: 'We knew. We didn't care.'", category: "culture" as const },
-    { name: "Child's Tablet Device", lore: "A learning device frozen on a geography lesson about glaciers. 'These ice sheets will last forever!' the cheerful narrator promised.", category: "technology" as const },
-    { name: "Office Coffee Mug", lore: "'World's Best Dad' printed on ceramic. Found in a submerged high-rise, still sitting on a desk as if waiting for Monday morning.", category: "personal" as const },
-    { name: "Weather Station Log", lore: "Final entry: 'Ocean temp +4.2°C above baseline. Evacuation protocols initiated. May God help us all.'", category: "technology" as const },
-    { name: "Theater Marquee Letter", lore: "The letter 'E' from the Grand Cinema's sign. Its last showing: 'An Inconvenient Truth.' Nobody came.", category: "culture" as const },
-    { name: "Sports Championship Ring", lore: "Gold ring celebrating the 2068 World Series. The winning team's stadium is now a reef teeming with fish.", category: "culture" as const },
-    { name: "Bridge Cable Sample", lore: "Steel cable from the Harbor Bridge, rated to last 200 years. It lasted 73 before the waters claimed it.", category: "infrastructure" as const },
-    { name: "Voting Ballot Box", lore: "Sealed ballot box from the 2064 election. The winner promised climate action. The box stayed sealed underwater.", category: "culture" as const },
-    { name: "Solar Panel Array", lore: "A rooftop solar installation meant to save the world. It powered the building's lights as the waters rose past the windows.", category: "technology" as const },
-    { name: "Restaurant Menu", lore: "Laminated menu from 'Neptune's Bounty Seafood.' Ironic that Neptune took everything back.", category: "culture" as const },
-    { name: "Flood Barrier Blueprint", lore: "Engineering plans for coastal barriers, approved but never built. Budget cuts, they said. Too expensive, they said.", category: "infrastructure" as const },
-    { name: "Smartphone", lore: "Its last text, unsent: 'The water's at the door. I love you all.' The message waits eternally in the outbox.", category: "personal" as const },
-    { name: "University Diploma", lore: "Degree in Environmental Science, 2066. The graduate dedicated their life to warning others. The warnings went unheeded.", category: "personal" as const },
-    { name: "Power Grid Relay", lore: "Component from the city's electrical network. It failed when seawater flooded the substations, plunging millions into darkness.", category: "infrastructure" as const },
+    { name: "Server Rack Fragment", description: "Corroded metal from a data center", lore: "A twisted piece of metal bearing faded corporate logos. Once housed the digital memories of millions, now a corroded monument to lost connectivity.", category: "technology" as const, rarity: "common" as const },
+    { name: "Subway Token", description: "Brass transit token from 2065", lore: "A brass token from the Metro Transit Authority, dated 2065. The inscription reads 'Your journey continues.' It didn't.", category: "personal" as const, rarity: "common" as const },
+    { name: "Wedding Photo Album", description: "Water-damaged celebration photos", lore: "Water-damaged photos of celebrations under blue skies. The final page shows a beachside ceremony—the same beach now 200 feet underwater.", category: "personal" as const, rarity: "uncommon" as const },
+    { name: "Traffic Light Controller", description: "Electronic intersection control box", lore: "An electronic box that once orchestrated vehicle flow through busy intersections. Its last command was eternal red.", category: "infrastructure" as const, rarity: "common" as const },
+    { name: "Museum Plaque", description: "Bronze plaque with scratched graffiti", lore: "Bronze plaque: 'The Age of Oil: 1850-2070.' Someone scratched underneath: 'We knew. We didn't care.'", category: "culture" as const, rarity: "uncommon" as const },
+    { name: "Child's Tablet Device", description: "Educational device frozen on glaciers lesson", lore: "A learning device frozen on a geography lesson about glaciers. 'These ice sheets will last forever!' the cheerful narrator promised.", category: "technology" as const, rarity: "common" as const },
+    { name: "Office Coffee Mug", description: "Ceramic mug from a submerged high-rise", lore: "'World's Best Dad' printed on ceramic. Found in a submerged high-rise, still sitting on a desk as if waiting for Monday morning.", category: "personal" as const, rarity: "common" as const },
+    { name: "Weather Station Log", description: "Final readings before evacuation", lore: "Final entry: 'Ocean temp +4.2°C above baseline. Evacuation protocols initiated. May God help us all.'", category: "technology" as const, rarity: "rare" as const },
+    { name: "Theater Marquee Letter", description: "Letter 'E' from Grand Cinema sign", lore: "The letter 'E' from the Grand Cinema's sign. Its last showing: 'An Inconvenient Truth.' Nobody came.", category: "culture" as const, rarity: "uncommon" as const },
+    { name: "Sports Championship Ring", description: "Gold ring from 2068 World Series", lore: "Gold ring celebrating the 2068 World Series. The winning team's stadium is now a reef teeming with fish.", category: "culture" as const, rarity: "uncommon" as const },
+    { name: "Bridge Cable Sample", description: "Steel cable from Harbor Bridge", lore: "Steel cable from the Harbor Bridge, rated to last 200 years. It lasted 73 before the waters claimed it.", category: "infrastructure" as const, rarity: "common" as const },
+    { name: "Voting Ballot Box", description: "Sealed box from 2064 election", lore: "Sealed ballot box from the 2064 election. The winner promised climate action. The box stayed sealed underwater.", category: "culture" as const, rarity: "uncommon" as const },
+    { name: "Solar Panel Array", description: "Rooftop renewable energy system", lore: "A rooftop solar installation meant to save the world. It powered the building's lights as the waters rose past the windows.", category: "technology" as const, rarity: "common" as const },
+    { name: "Restaurant Menu", description: "Laminated menu from seafood restaurant", lore: "Laminated menu from 'Neptune's Bounty Seafood.' Ironic that Neptune took everything back.", category: "culture" as const, rarity: "common" as const },
+    { name: "Flood Barrier Blueprint", description: "Unbuilt coastal protection plans", lore: "Engineering plans for coastal barriers, approved but never built. Budget cuts, they said. Too expensive, they said.", category: "infrastructure" as const, rarity: "rare" as const },
+    { name: "Smartphone", description: "Device with unsent final message", lore: "Its last text, unsent: 'The water's at the door. I love you all.' The message waits eternally in the outbox.", category: "personal" as const, rarity: "uncommon" as const },
+    { name: "University Diploma", description: "Environmental Science degree, 2066", lore: "Degree in Environmental Science, 2066. The graduate dedicated their life to warning others. The warnings went unheeded.", category: "personal" as const, rarity: "rare" as const },
+    { name: "Power Grid Relay", description: "Failed electrical network component", lore: "Component from the city's electrical network. It failed when seawater flooded the substations, plunging millions into darkness.", category: "infrastructure" as const, rarity: "uncommon" as const },
   ];
 
   const artifacts: Artifact[] = [];
@@ -269,8 +271,10 @@ const createArtifacts = (occupied: Set<string>): Artifact[] => {
       id: `artifact-${i}`,
       position,
       name: artifactData[i].name,
+      description: artifactData[i].description,
       lore: artifactData[i].lore,
       category: artifactData[i].category,
+      rarity: artifactData[i].rarity,
       isCollected: false,
       clueRevealed: false,
     });
@@ -497,6 +501,8 @@ export const useGameStore = create<GameState>()(
       set(state => ({ 
         isInventoryOpen: !state.isInventoryOpen,
         isShopOpen: false,
+        isArtifactLogOpen: false,
+        isArchivistOpen: false,
       }));
     },
     

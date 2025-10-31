@@ -109,6 +109,7 @@ export function MovementController() {
   const isCollecting = useGameStore((state) => state.isCollecting);
   const gridSize = useGameStore((state) => state.gridSize);
   const collectibles = useGameStore((state) => state.collectibles);
+  const artifacts = useGameStore((state) => state.artifacts);
   const setPath = useGameStore((state) => state.setPath);
   const setIsMoving = useGameStore((state) => state.setIsMoving);
   const updatePlayerPosition = useGameStore((state) => state.updatePlayerPosition);
@@ -124,6 +125,7 @@ export function MovementController() {
   const collectionStartTime = useGameStore((state) => state.collectionStartTime);
   const collectionDuration = useGameStore((state) => state.collectionDuration);
   const getEstimatedCollectionTime = useGameStore((state) => state.getEstimatedCollectionTime);
+  const collectArtifact = useGameStore((state) => state.collectArtifact);
   
   const movementProgress = useRef(0);
   const baseSpeed = 3;
@@ -187,13 +189,21 @@ export function MovementController() {
         clearHighlights();
         console.log("Destination reached");
         
-        const collectible = collectibles.find(
-          c => c.position.x === nextPosition.x && c.position.y === nextPosition.y
+        const artifact = artifacts.find(
+          a => !a.isCollected && a.position.x === nextPosition.x && a.position.y === nextPosition.y
         );
         
-        if (collectible) {
-          const estimatedTime = getEstimatedCollectionTime(collectible.collectionTime);
-          startCollection(collectible.id, estimatedTime);
+        if (artifact) {
+          collectArtifact(artifact.id);
+        } else {
+          const collectible = collectibles.find(
+            c => c.position.x === nextPosition.x && c.position.y === nextPosition.y
+          );
+          
+          if (collectible) {
+            const estimatedTime = getEstimatedCollectionTime(collectible.collectionTime);
+            startCollection(collectible.id, estimatedTime);
+          }
         }
       } else {
         highlightPath(remainingPath);

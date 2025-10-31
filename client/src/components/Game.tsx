@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { Terrain } from "./Terrain";
 import { Player } from "./Player";
 import { Collectible } from "./Collectible";
+import { Artifact } from "./Artifact";
 import { MovementController } from "./MovementController";
 import { MagnetEffect } from "./MagnetEffect";
 import { CameraFollowPlayer } from "./CameraFollowPlayer";
@@ -11,6 +12,8 @@ import { CollectionIndicator } from "./CollectionIndicator";
 import { HUD } from "./HUD";
 import { Inventory } from "./Inventory";
 import { Shop } from "./Shop";
+import { ArtifactLog } from "./ArtifactLog";
+import { Archivist } from "./Archivist";
 import { CancelCollectionDialog } from "./CancelCollectionDialog";
 import { KeyboardListener } from "./KeyboardListener";
 import { MobileControls } from "./MobileControls";
@@ -18,11 +21,18 @@ import { useGameStore } from "@/lib/stores/useGameStore";
 
 function Scene() {
   const collectibles = useGameStore((state) => state.collectibles);
+  const artifacts = useGameStore((state) => state.artifacts);
   const tiles = useGameStore((state) => state.tiles);
   
   const visibleCollectibles = collectibles.filter(collectible => {
     const tile = tiles[collectible.position.y]?.[collectible.position.x];
     return tile && tile.isExplored;
+  });
+  
+  const visibleArtifacts = artifacts.filter(artifact => {
+    if (artifact.isCollected) return false;
+    const tile = tiles[artifact.position.y]?.[artifact.position.x];
+    return tile && (tile.isExplored || artifact.clueRevealed);
   });
   
   return (
@@ -35,6 +45,9 @@ function Scene() {
       <Player />
       {visibleCollectibles.map((collectible) => (
         <Collectible key={collectible.id} collectible={collectible} />
+      ))}
+      {visibleArtifacts.map((artifact) => (
+        <Artifact key={artifact.id} artifact={artifact} />
       ))}
       
       <TravelIndicator />
@@ -69,6 +82,8 @@ export function Game() {
       <HUD />
       <Inventory />
       <Shop />
+      <ArtifactLog />
+      <Archivist />
       <CancelCollectionDialog />
       <KeyboardListener />
       <MobileControls />
