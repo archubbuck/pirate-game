@@ -84,14 +84,21 @@ export class PixiTerrain {
     tileGraphic.clear();
     tileGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
     tileGraphic.fill({ color: baseColor, alpha: opacity });
+    
+    if (tile.isExplored && Math.random() > 0.85) {
+      const waveX = Math.random() * (this.tileSize - 2);
+      const waveY = Math.random() * (this.tileSize - 2);
+      tileGraphic.circle(waveX, waveY, 1);
+      tileGraphic.fill({ color: 0x1a5f7a, alpha: 0.5 });
+    }
 
     borderGraphic.clear();
     if (tile.isHighlighted && tile.isExplored) {
       borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-      borderGraphic.stroke({ color: 0x4a9eff, width: 2, alpha: 1 });
+      borderGraphic.stroke({ color: 0xffcc00, width: 2.5, alpha: 1 });
     } else {
       borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-      borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: tile.isExplored ? 0.6 : 0.05 });
+      borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: tile.isExplored ? 0.7 : 0.05 });
     }
   }
 

@@ -16,21 +16,42 @@ export class PixiEnemyShips {
     
     const graphics = new PIXI.Graphics();
     
-    graphics.moveTo(10, 0);
-    graphics.lineTo(-8, -6);
-    graphics.lineTo(-5, 0);
-    graphics.lineTo(-8, 6);
+    graphics.moveTo(12, 0);
+    graphics.lineTo(-10, -8);
+    graphics.lineTo(-6, 0);
+    graphics.lineTo(-10, 8);
     graphics.closePath();
-    graphics.fill({ color: 0xaa3333, alpha: 1 });
-    graphics.stroke({ color: 0xff4444, width: 2 });
+    graphics.fill({ color: 0x8b0000 });
+    graphics.stroke({ color: 0x5a0000, width: 2 });
+    
+    graphics.rect(-6, -6, 12, 12);
+    graphics.fill({ color: 0xa52a2a });
+    graphics.stroke({ color: 0x8b0000, width: 1 });
+    
+    graphics.rect(-1, -14, 2, 8);
+    graphics.fill({ color: 0x654321 });
+    
+    graphics.moveTo(1, -12);
+    graphics.lineTo(8, -10);
+    graphics.lineTo(8, -6);
+    graphics.lineTo(1, -8);
+    graphics.closePath();
+    graphics.fill({ color: 0x2f2f2f });
+    graphics.stroke({ color: 0x1a1a1a, width: 1 });
+    
+    graphics.circle(0, 0, 2);
+    graphics.fill({ color: 0xff0000 });
     
     const healthBarBg = new PIXI.Graphics();
-    healthBarBg.rect(-10, 12, 20, 3);
-    healthBarBg.fill({ color: 0x333333 });
+    healthBarBg.rect(-12, 14, 24, 4);
+    healthBarBg.fill({ color: 0x222222 });
+    healthBarBg.stroke({ color: 0x000000, width: 1 });
     
     const healthBarFg = new PIXI.Graphics();
-    healthBarFg.rect(-10, 12, 20 * (ship.health / ship.maxHealth), 3);
-    healthBarFg.fill({ color: 0x44aa44 });
+    const healthPercent = ship.health / ship.maxHealth;
+    const healthColor = healthPercent > 0.5 ? 0x44aa44 : healthPercent > 0.25 ? 0xffaa00 : 0xdd3333;
+    healthBarFg.rect(-12, 14, 24 * healthPercent, 4);
+    healthBarFg.fill({ color: healthColor });
     
     shipContainer.addChild(graphics);
     shipContainer.addChild(healthBarBg);
@@ -78,8 +99,10 @@ export class PixiEnemyShips {
         const healthBarFg = existing.children[2] as PIXI.Graphics;
         if (healthBarFg) {
           healthBarFg.clear();
-          healthBarFg.rect(-10, 12, 20 * (ship.health / ship.maxHealth), 3);
-          healthBarFg.fill({ color: 0x44aa44 });
+          const healthPercent = ship.health / ship.maxHealth;
+          const healthColor = healthPercent > 0.5 ? 0x44aa44 : healthPercent > 0.25 ? 0xffaa00 : 0xdd3333;
+          healthBarFg.rect(-12, 14, 24 * healthPercent, 4);
+          healthBarFg.fill({ color: healthColor });
         }
       }
     });
