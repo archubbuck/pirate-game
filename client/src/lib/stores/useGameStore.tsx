@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
+import { useSkillsStore } from "./useSkillsStore";
 
 export type GamePhase = "ready" | "playing" | "ended";
 
@@ -96,6 +97,22 @@ export interface CombatState {
   combatProgress: number;
 }
 
+export type CrewState = "idle" | "deployed" | "collecting" | "awaitingPickup" | "drifting" | "captured";
+
+export interface CrewMember {
+  id: string;
+  position: Position;
+  visualPosition: { x: number; y: number };
+  state: CrewState;
+  deployedAt: number | null;
+  collectingItemId: string | null;
+  collectionStartTime: number | null;
+  collectionDuration: number | null;
+  driftStartTime: number | null;
+  poachingEnemyId: string | null;
+  poachStartTime: number | null;
+}
+
 interface GameState {
   phase: GamePhase;
   
@@ -109,6 +126,8 @@ interface GameState {
   selectedIsland: Island | null;
   enemyShips: EnemyShip[];
   combatState: CombatState;
+  crewMembers: CrewMember[];
+  maxCrewCapacity: number;
   tiles: Tile[][];
   
   currentPath: Position[];
@@ -476,6 +495,8 @@ export const useGameStore = create<GameState>()(
       combatDuration: 5000,
       combatProgress: 0,
     },
+    crewMembers: [],
+    maxCrewCapacity: 6,
     tiles,
     
     currentPath: [],
@@ -553,6 +574,8 @@ export const useGameStore = create<GameState>()(
           combatDuration: 5000,
           combatProgress: 0,
         },
+        crewMembers: [],
+        maxCrewCapacity: 6,
         tiles,
         currentPath: [],
         isMoving: false,
@@ -621,6 +644,8 @@ export const useGameStore = create<GameState>()(
       }));
       get().revealTilesAround(position, get().visionRadius);
       
+      useSkillsStore.getState().addXp("sailing", 10);
+      
       const collectible = get().collectibles.find(
         c => c.position.x === position.x && c.position.y === position.y
       );
@@ -659,6 +684,9 @@ export const useGameStore = create<GameState>()(
       }));
       console.log(`Collected item ${id}! Total: ${get().collectedCount}`);
       
+      const xpAmount = collectible.richness * 15;
+      useSkillsStore.getState().addXp("salvaging", xpAmount);
+      
       if (get().collectibles.length === 0) {
         setTimeout(() => {
           get().end();
@@ -667,6 +695,8 @@ export const useGameStore = create<GameState>()(
     },
     
     revealTilesAround: (position: Position, radius: number) => {
+      let newlyExploredCount = 0;
+      
       set(state => {
         const newTiles = state.tiles.map(row =>
           row.map(tile => {
@@ -674,7 +704,10 @@ export const useGameStore = create<GameState>()(
               Math.pow(tile.x - position.x, 2) + Math.pow(tile.y - position.y, 2)
             );
             
-            if (distance <= radius) {
+            if (distance <= radius && !tile.isExplored) {
+              newlyExploredCount++;
+              return { ...tile, isExplored: true };
+            } else if (distance <= radius) {
               return { ...tile, isExplored: true };
             }
             return tile;
@@ -682,6 +715,10 @@ export const useGameStore = create<GameState>()(
         );
         return { tiles: newTiles };
       });
+      
+      if (newlyExploredCount > 0) {
+        useSkillsStore.getState().addXp("exploration", newlyExploredCount * 5);
+      }
     },
     
     highlightPath: (path: Position[]) => {
@@ -775,6 +812,8 @@ export const useGameStore = create<GameState>()(
         
         get().removeEnemyShip(enemy.id);
         console.log(`Defeated enemy ship! Collected:`, enemy.loot);
+        
+        useSkillsStore.getState().addXp("combat", 50);
       }
       
       set({
@@ -978,7 +1017,7 @@ export const useGameStore = create<GameState>()(
     },
     
     getTravelTime: (distance: number) => {
-      const baseSpeed = 2000;
+      const baseSpeed = 1000;
       const engineLevel = get().shipUpgrades.engine;
       const speedBoost = get().activePowerUps.some(p => p.type === "speed") ? 0.5 : 1;
       return (distance * baseSpeed) / engineLevel * speedBoost;

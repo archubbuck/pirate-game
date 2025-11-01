@@ -27,60 +27,62 @@ export function ResourcePanel() {
   ];
 
   return (
-    <div className="bg-gray-900/95 backdrop-blur-md border border-blue-700/50 rounded-lg overflow-hidden shadow-xl">
+    <div className="bg-stone-800 border-4 border-stone-950 rounded shadow-2xl" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.8)', minWidth: '220px' }}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-800/50 transition-colors"
+        className="w-full px-2 py-1.5 flex items-center justify-between hover:bg-stone-700/50 transition-colors border-b-2 border-stone-950 bg-gradient-to-b from-amber-900/20 to-transparent"
       >
         <div className="flex items-center gap-2">
-          <span className="text-lg">📦</span>
-          <span className="text-blue-400 font-bold text-sm">Cargo Bay</span>
+          <span className="text-base">📦</span>
+          <span className="text-amber-200 font-bold text-sm tracking-wide" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+            Cargo Bay
+          </span>
         </div>
-        <span className="text-xs text-gray-400">{isExpanded ? "▼" : "▶"}</span>
+        <span className="text-xs text-stone-400">{isExpanded ? "▼" : "▶"}</span>
       </button>
 
       {isExpanded && (
-        <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top duration-200">
-          <div className="pt-2">
+        <div className="px-2 pb-2 pt-2 space-y-2">
+          <div>
             <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-gray-400">Capacity</span>
-              <span className={`font-bold ${cargoCount >= maxCargo ? 'text-red-400' : 'text-white'}`}>
+              <span className="text-stone-300">Capacity</span>
+              <span className={`font-bold ${cargoCount >= maxCargo ? 'text-red-400' : 'text-amber-200'}`}>
                 {cargoCount}/{maxCargo}
               </span>
             </div>
-            <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-black/60 rounded border border-stone-950/50 overflow-hidden" style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.8)' }}>
               <div
                 className={`h-full transition-all duration-300 ${
-                  cargoPercentage >= 100 ? 'bg-red-500' : 
-                  cargoPercentage >= 80 ? 'bg-yellow-500' : 
-                  'bg-blue-500'
+                  cargoPercentage >= 100 ? 'bg-red-600' : 
+                  cargoPercentage >= 80 ? 'bg-yellow-600' : 
+                  'bg-blue-600'
                 }`}
                 style={{ width: `${Math.min(cargoPercentage, 100)}%` }}
               />
             </div>
           </div>
 
-          <div className="pt-1 space-y-1">
+          <div className="space-y-1">
             {resources.map((resource) => {
               const count = inventory[resource.key] || 0;
               return (
                 <div
                   key={resource.key}
-                  className="flex items-center justify-between text-xs bg-gray-800/50 rounded px-2 py-1"
+                  className="flex items-center justify-between text-xs bg-stone-900/50 rounded px-2 py-1 border border-stone-950/50"
                 >
                   <div className="flex items-center gap-1.5">
                     <span className={resource.color}>{resource.icon}</span>
-                    <span className="text-gray-300">{resource.name}</span>
+                    <span className="text-stone-300">{resource.name}</span>
                   </div>
-                  <span className="font-mono text-white font-bold">{count}</span>
+                  <span className="font-mono text-amber-200 font-bold">{count}</span>
                 </div>
               );
             })}
           </div>
 
-          <div className="pt-2 border-t border-gray-700">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">Currency</span>
+          <div className="pt-1 border-t-2 border-stone-950">
+            <div className="flex items-center justify-between text-xs bg-stone-900/50 rounded px-2 py-1 border border-stone-950/50">
+              <span className="text-stone-300">Currency</span>
               <span className="text-yellow-400 font-bold">⚙️ {currency}</span>
             </div>
           </div>

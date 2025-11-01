@@ -20,7 +20,7 @@ export class PixiTerrain {
   }
   
   private initializeTileColors() {
-    const waterShades = [0x0a4d68, 0x0d5a7a, 0x106785, 0x15729e, 0x1a7fb3, 0x0c5d7f, 0x0e6691];
+    const waterShades = [0x0a3d52, 0x0b4058, 0x09384d, 0x0c4560, 0x0d4a68, 0x083449, 0x0e4d6b];
     const gridSize = useGameStore.getState().gridSize;
     
     for (let y = 0; y < gridSize; y++) {
@@ -91,7 +91,7 @@ export class PixiTerrain {
       borderGraphic.stroke({ color: 0x4a9eff, width: 2, alpha: 1 });
     } else {
       borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-      borderGraphic.stroke({ color: 0x4a4a4a, width: 1, alpha: tile.isExplored ? 0.5 : 0.05 });
+      borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: tile.isExplored ? 0.6 : 0.05 });
     }
   }
 

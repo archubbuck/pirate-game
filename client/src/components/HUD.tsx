@@ -4,6 +4,7 @@ import { ResourcePanel } from "./ResourcePanel";
 import { ActivityPanel } from "./ActivityPanel";
 import { NotificationSystem } from "./NotificationSystem";
 import { MiniMap } from "./MiniMap";
+import { SkillsPanel } from "./SkillsPanel";
 
 export function HUD() {
   const phase = useGameStore((state) => state.phase);
@@ -123,17 +124,16 @@ export function HUD() {
           
           <div className="absolute top-2 left-2 flex gap-2">
             <div className="flex flex-col gap-2 max-w-xs">
-              <ResourcePanel />
               <ActivityPanel />
               
               {activePowerUps.length > 0 && (
-                <div className="bg-gray-900/95 backdrop-blur-md border border-green-700/50 rounded-lg p-2 shadow-xl">
+                <div className="bg-stone-800 border-4 border-stone-950 rounded p-2 shadow-2xl" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.8)' }}>
                   <div className="text-green-400 font-bold text-xs mb-2">💪 Active Upgrades</div>
                   <div className="flex gap-1 flex-wrap">
                     {activePowerUps.map((powerUp) => (
                       <span
                         key={powerUp.type}
-                        className="bg-green-900/40 border border-green-500/50 rounded px-2 py-1 text-xs flex items-center gap-1"
+                        className="bg-green-900/40 border-2 border-green-700/50 rounded px-2 py-1 text-xs flex items-center gap-1"
                         title={powerUpNames[powerUp.type]}
                       >
                         <span>{powerUpIcons[powerUp.type]}</span>
@@ -146,8 +146,16 @@ export function HUD() {
             </div>
             
             <div className="flex flex-col gap-2">
-              <MiniMap />
+              <SkillsPanel />
             </div>
+          </div>
+          
+          <div className="absolute top-2 right-2">
+            <MiniMap />
+          </div>
+          
+          <div className="absolute bottom-2 right-2">
+            <ResourcePanel />
           </div>
           
           <div className="absolute bottom-2 left-2 flex gap-1.5">

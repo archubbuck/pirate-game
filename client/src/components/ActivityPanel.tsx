@@ -64,21 +64,23 @@ export function ActivityPanel() {
   if (!hasActivity) return null;
 
   return (
-    <div className="bg-gray-900/95 backdrop-blur-md border border-blue-700/50 rounded-lg overflow-hidden shadow-xl p-3 space-y-2 min-w-48">
-      <div className="text-blue-400 font-bold text-xs mb-2">⚙️ Active Tasks</div>
+    <div className="bg-stone-800 border-4 border-stone-950 rounded shadow-2xl p-2 space-y-2 min-w-48" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.8)' }}>
+      <div className="text-amber-200 font-bold text-xs mb-1 border-b-2 border-stone-950 pb-1 bg-gradient-to-b from-amber-900/20 to-transparent px-1" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+        ⚙️ Active Tasks
+      </div>
       
       {isMoving && (
-        <div className="space-y-1">
+        <div className="space-y-1 bg-stone-900/50 rounded px-2 py-1 border border-stone-950/50">
           <div className="flex items-center justify-between text-xs">
             <span className="text-blue-300 flex items-center gap-1">
               <span className="animate-pulse">⛵</span>
               <span>Sailing</span>
             </span>
-            <span className="font-mono text-white font-bold">{getTravelTimeRemaining().toFixed(1)}s</span>
+            <span className="font-mono text-amber-200 font-bold">{getTravelTimeRemaining().toFixed(1)}s</span>
           </div>
-          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-black/60 rounded border border-stone-950/50 overflow-hidden" style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.8)' }}>
             <div
-              className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-100"
+              className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-100"
               style={{ width: `${getTravelProgress()}%` }}
             />
           </div>
@@ -86,17 +88,17 @@ export function ActivityPanel() {
       )}
 
       {isCollecting && (
-        <div className="space-y-1">
+        <div className="space-y-1 bg-stone-900/50 rounded px-2 py-1 border border-stone-950/50">
           <div className="flex items-center justify-between text-xs">
             <span className="text-green-300 flex items-center gap-1">
               <span className="animate-pulse">🔧</span>
               <span>Collecting</span>
             </span>
-            <span className="font-mono text-white font-bold">{getCollectionTimeRemaining().toFixed(1)}s</span>
+            <span className="font-mono text-amber-200 font-bold">{getCollectionTimeRemaining().toFixed(1)}s</span>
           </div>
-          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-black/60 rounded border border-stone-950/50 overflow-hidden" style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.8)' }}>
             <div
-              className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-100"
+              className="h-full bg-gradient-to-r from-green-600 to-emerald-500 transition-all duration-100"
               style={{ width: `${getCollectionProgress()}%` }}
             />
           </div>
@@ -104,17 +106,17 @@ export function ActivityPanel() {
       )}
 
       {combatState.isInCombat && (
-        <div className="space-y-1">
+        <div className="space-y-1 bg-stone-900/50 rounded px-2 py-1 border border-stone-950/50">
           <div className="flex items-center justify-between text-xs">
             <span className="text-red-300 flex items-center gap-1">
               <span className="animate-pulse">⚔️</span>
               <span>Combat</span>
             </span>
-            <span className="font-mono text-white font-bold">{getCombatTimeRemaining().toFixed(1)}s</span>
+            <span className="font-mono text-amber-200 font-bold">{getCombatTimeRemaining().toFixed(1)}s</span>
           </div>
-          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-black/60 rounded border border-stone-950/50 overflow-hidden" style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.8)' }}>
             <div
-              className="h-full bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-100"
+              className="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-100"
               style={{ width: `${getCombatProgress()}%` }}
             />
           </div>
