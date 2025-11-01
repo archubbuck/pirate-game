@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { useSkillsStore } from "./useSkillsStore";
+import { NPC_CONFIGS, calculateNPCHealth, generateLoot, getRandomNPCType, getRandomNPCLevel } from "@/config/npcConfig";
 
 export type GamePhase = "ready" | "playing" | "ended";
 
@@ -76,6 +77,8 @@ export interface Island {
 
 export interface EnemyShip {
   id: string;
+  npcType: string;
+  level: number;
   position: Position;
   visualPosition: { x: number; y: number };
   rotation: number;
@@ -497,7 +500,6 @@ const createArtifacts = (occupied: Set<string>): Artifact[] => {
 const createEnemyShips = (occupied: Set<string>): EnemyShip[] => {
   const enemyShips: EnemyShip[] = [];
   const enemyCount = 5;
-  const types: ("timber" | "alloy" | "circuit" | "biofiber")[] = ["timber", "alloy", "circuit", "biofiber"];
   
   for (let i = 0; i < enemyCount; i++) {
     let position: Position;
@@ -513,24 +515,24 @@ const createEnemyShips = (occupied: Set<string>): EnemyShip[] => {
     
     occupied.add(posKey);
     
-    const loot: { [key: string]: number } = {};
-    const lootCount = Math.floor(Math.random() * 2) + 1;
-    for (let l = 0; l < lootCount; l++) {
-      const type = types[Math.floor(Math.random() * types.length)];
-      const quantity = Math.floor(Math.random() * 3) + 1;
-      loot[type] = (loot[type] || 0) + quantity;
-    }
+    const npcType = getRandomNPCType();
+    const level = getRandomNPCLevel(npcType);
+    const maxHealth = calculateNPCHealth(npcType, level);
+    const loot = generateLoot(npcType);
+    const config = NPC_CONFIGS[npcType];
     
     enemyShips.push({
       id: `enemy-${i}`,
+      npcType,
+      level,
       position,
       visualPosition: { x: position.x, y: position.y },
       rotation: Math.random() * Math.PI * 2,
-      health: 100,
-      maxHealth: 100,
+      health: maxHealth,
+      maxHealth,
       loot,
       currentPath: [],
-      moveSpeed: 0.5,
+      moveSpeed: config?.stats.moveSpeed || 0.5,
       nextMoveTime: Date.now() + Math.random() * 5000 + 3000,
     });
   }
