@@ -1,6 +1,9 @@
 import { useGameStore } from "@/lib/stores/useGameStore";
 import { useAudio } from "@/lib/stores/useAudio";
-import { useState, useEffect } from "react";
+import { ResourcePanel } from "./ResourcePanel";
+import { ActivityPanel } from "./ActivityPanel";
+import { NotificationSystem } from "./NotificationSystem";
+import { MiniMap } from "./MiniMap";
 
 export function HUD() {
   const phase = useGameStore((state) => state.phase);
@@ -27,19 +30,7 @@ export function HUD() {
   const zoomLevel = useGameStore((state) => state.zoomLevel);
   const setZoomLevel = useGameStore((state) => state.setZoomLevel);
   const isMuted = useAudio((state) => state.isMuted);
-  const toggleMute = useAudio((state) => state.toggleMute);
-  
-  const [, setTick] = useState(0);
-  
-  useEffect(() => {
-    if (!isMoving && !isCollecting) return;
-    
-    const interval = setInterval(() => {
-      setTick(t => t + 1);
-    }, 100);
-    
-    return () => clearInterval(interval);
-  }, [isMoving, isCollecting]);
+  const toggleMute = useAudio ((state) => state.toggleMute);
   
   const totalCollectibles = collectedCount + collectibles.length;
   const cargoCount = getCargoCount();
@@ -56,20 +47,6 @@ export function HUD() {
     speed: "Afterburner Rig",
     vision: "Sonar Beacon",
     magnet: "Grapple Winch",
-  };
-  
-  const getTravelTimeRemaining = () => {
-    if (!isMoving || !travelStartTime || !travelDuration) return null;
-    const elapsed = Date.now() - travelStartTime;
-    const remaining = Math.max(0, travelDuration - elapsed);
-    return (remaining / 1000).toFixed(1);
-  };
-  
-  const getCollectionTimeRemaining = () => {
-    if (!isCollecting || !collectionStartTime || !collectionDuration) return null;
-    const elapsed = Date.now() - collectionStartTime;
-    const remaining = Math.max(0, collectionDuration - elapsed);
-    return (remaining / 1000).toFixed(1);
   };
   
   return (
@@ -142,64 +119,51 @@ export function HUD() {
       
       {phase === "playing" && (
         <>
-          <div className="absolute top-2 left-2 bg-gray-900/95 border border-blue-700 rounded-lg p-2 text-xs min-w-48">
-            <div className="text-blue-400 font-bold mb-1">⛴️ Vessel Status</div>
-            
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-gray-400">Cargo:</span>
-              <span className={`font-bold ${cargoCount >= maxCargo ? 'text-red-400' : 'text-white'}`}>
-                {cargoCount}/{maxCargo}
-              </span>
+          <NotificationSystem />
+          
+          <div className="absolute top-2 left-2 flex gap-2">
+            <div className="flex flex-col gap-2 max-w-xs">
+              <ResourcePanel />
+              <ActivityPanel />
+              
+              {activePowerUps.length > 0 && (
+                <div className="bg-gray-900/95 backdrop-blur-md border border-green-700/50 rounded-lg p-2 shadow-xl">
+                  <div className="text-green-400 font-bold text-xs mb-2">💪 Active Upgrades</div>
+                  <div className="flex gap-1 flex-wrap">
+                    {activePowerUps.map((powerUp) => (
+                      <span
+                        key={powerUp.type}
+                        className="bg-green-900/40 border border-green-500/50 rounded px-2 py-1 text-xs flex items-center gap-1"
+                        title={powerUpNames[powerUp.type]}
+                      >
+                        <span>{powerUpIcons[powerUp.type]}</span>
+                        <span className="text-green-200">{powerUpNames[powerUp.type]}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-gray-400">Currency:</span>
-              <span className="text-yellow-400 font-bold">⚙️ {currency}</span>
+            <div className="flex flex-col gap-2">
+              <MiniMap />
             </div>
-            
-            {(isMoving || isCollecting) && (
-              <div className="mt-2 pt-2 border-t border-gray-700">
-                {isMoving && getTravelTimeRemaining() && (
-                  <div className="text-blue-300">
-                    ⛵ Sailing... {getTravelTimeRemaining()}s
-                  </div>
-                )}
-                {isCollecting && getCollectionTimeRemaining() && (
-                  <div className="text-green-300">
-                    🔧 Collecting... {getCollectionTimeRemaining()}s
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {activePowerUps.length > 0 && (
-              <div className="flex gap-1 flex-wrap mt-2 pt-2 border-t border-gray-700">
-                {activePowerUps.map((powerUp) => (
-                  <span
-                    key={powerUp.type}
-                    className="bg-green-900/40 border border-green-500/50 rounded px-1.5 py-0.5 text-xs"
-                    title={powerUpNames[powerUp.type]}
-                  >
-                    {powerUpIcons[powerUp.type]}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
           
-          <div className="absolute bottom-2 left-2 flex gap-1">
+          <div className="absolute bottom-2 left-2 flex gap-1.5">
             <button
               onClick={toggleMute}
-              className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-2 py-1 rounded text-sm transition-colors"
+              className="bg-gray-900/95 backdrop-blur-md hover:bg-gray-800/95 border border-gray-700/50 text-white px-3 py-2 rounded-lg text-sm transition-all shadow-lg hover:shadow-xl"
+              title={isMuted ? "Unmute" : "Mute"}
             >
               {isMuted ? "🔇" : "🔊"}
             </button>
             <button
               onClick={toggleCameraFollow}
-              className={`px-3 py-1 rounded text-sm transition-colors ${
+              className={`px-3 py-2 rounded-lg text-sm transition-all shadow-lg hover:shadow-xl backdrop-blur-md ${
                 isCameraFollowing
-                  ? "bg-cyan-900/90 hover:bg-cyan-800/90 border border-cyan-600 text-cyan-200"
-                  : "bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white"
+                  ? "bg-cyan-900/95 hover:bg-cyan-800/95 border border-cyan-600/50 text-cyan-200"
+                  : "bg-gray-900/95 hover:bg-gray-800/95 border border-gray-700/50 text-white"
               }`}
               title={isCameraFollowing ? "Camera following ship" : "Free camera (right-click drag to pan)"}
             >
@@ -207,14 +171,15 @@ export function HUD() {
             </button>
             <button
               onClick={restart}
-              className="bg-gray-900/90 hover:bg-gray-800/90 border border-gray-700 text-white px-2 py-1 rounded text-sm transition-colors"
+              className="bg-gray-900/95 backdrop-blur-md hover:bg-gray-800/95 border border-gray-700/50 text-white px-3 py-2 rounded-lg text-sm transition-all shadow-lg hover:shadow-xl"
+              title="Restart Game"
             >
               ↻
             </button>
           </div>
           
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
-            <div className="text-xs text-gray-400 font-mono bg-gray-900/70 px-2 py-1 rounded">
+            <div className="text-xs text-gray-300 font-mono bg-gray-900/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-gray-700/50 shadow-lg">
               {zoomLevel}%
             </div>
             <div className="relative">
@@ -264,17 +229,19 @@ export function HUD() {
             <div className="text-xs text-gray-500 font-mono">ZOOM</div>
           </div>
           
-          <div className="absolute bottom-2 right-2 flex gap-1">
+          <div className="absolute bottom-2 right-2 flex gap-1.5">
             <button
               onClick={toggleArtifactLog}
-              className="bg-cyan-900/90 hover:bg-cyan-800/90 border border-cyan-600 text-cyan-200 px-3 py-1 rounded text-sm transition-colors flex items-center gap-1"
+              className="bg-cyan-900/95 backdrop-blur-md hover:bg-cyan-800/95 border border-cyan-600/50 text-cyan-200 px-3 py-2 rounded-lg text-sm transition-all shadow-lg hover:shadow-xl flex items-center gap-1.5"
             >
-              📖 Artifacts ({collectedArtifacts})
+              <span>📖</span>
+              <span>Artifacts</span>
+              <span className="bg-cyan-800/50 px-1.5 py-0.5 rounded text-xs">{collectedArtifacts}</span>
             </button>
             {archivistUnlocked && (
               <button
                 onClick={toggleArchivist}
-                className="bg-purple-900/90 hover:bg-purple-800/90 border border-purple-600 text-purple-200 px-3 py-1 rounded text-sm transition-colors"
+                className="bg-purple-900/95 backdrop-blur-md hover:bg-purple-800/95 border border-purple-600/50 text-purple-200 px-3 py-2 rounded-lg text-sm transition-all shadow-lg hover:shadow-xl"
               >
                 🔮 Archivist
               </button>
