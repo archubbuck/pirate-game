@@ -136,9 +136,18 @@ export function MovementController() {
   const TILE_TRANSITION_TIME = 600;
   const rerouteStart = useRef<{ x: number; y: number } | null>(null);
   const segmentDuration = useRef(TILE_TRANSITION_TIME);
+  const lastTargetPosition = useRef<Position | null>(null);
   
   useEffect(() => {
     if (targetPosition && !isCollecting) {
+      // Prevent duplicate pathfinding for the same target
+      if (lastTargetPosition.current && 
+          lastTargetPosition.current.x === targetPosition.x && 
+          lastTargetPosition.current.y === targetPosition.y) {
+        return;
+      }
+      lastTargetPosition.current = { ...targetPosition };
+      
       const state = useGameStore.getState();
       const currentIsMoving = state.isMoving;
       const currentPath = state.currentPath;
@@ -194,6 +203,9 @@ export function MovementController() {
         console.log("No path found to target");
         setTargetPosition(null);
       }
+    } else if (!targetPosition) {
+      // Reset when target is cleared
+      lastTargetPosition.current = null;
     }
   }, [targetPosition, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
   
