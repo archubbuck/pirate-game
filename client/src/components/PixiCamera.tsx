@@ -236,7 +236,7 @@ export class PixiCamera {
     const centerTileX = player.position.x;
     const centerTileY = player.position.y;
     
-    const loadRadius = 7.5;
+    const loadRadius = 10;
     
     const minTileX = centerTileX - loadRadius;
     const maxTileX = centerTileX + loadRadius;

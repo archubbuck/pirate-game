@@ -623,7 +623,7 @@ export const useGameStore = create<GameState>()(
     
     isCameraFollowing: true,
     cameraOffset: { x: 0, z: 0 },
-    zoomLevel: 100,
+    zoomLevel: 65,
     cameraTransform: {
       pivotX: (GRID_SIZE * 40) / 2,
       pivotY: (GRID_SIZE * 40) / 2,
@@ -696,7 +696,7 @@ export const useGameStore = create<GameState>()(
         currency: 0,
         isCameraFollowing: true,
         cameraOffset: { x: 0, z: 0 },
-        zoomLevel: 100,
+        zoomLevel: 65,
       });
       console.log("Game restarted");
     },
