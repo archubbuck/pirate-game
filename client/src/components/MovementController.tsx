@@ -108,7 +108,6 @@ function findPath(start: Position, end: Position, gridSize: number, tiles: any[]
 export function MovementController() {
   const player = useGameStore((state) => state.player);
   const targetPosition = useGameStore((state) => state.targetPosition);
-  const isCollecting = useGameStore((state) => state.isCollecting);
   const gridSize = useGameStore((state) => state.gridSize);
   const tiles = useGameStore((state) => state.tiles);
   const collectibles = useGameStore((state) => state.collectibles);
@@ -124,12 +123,10 @@ export function MovementController() {
   const activePowerUps = useGameStore((state) => state.activePowerUps);
   const getTravelTime = useGameStore((state) => state.getTravelTime);
   const startTravel = useGameStore((state) => state.startTravel);
-  const startCollection = useGameStore((state) => state.startCollection);
-  const completeCollection = useGameStore((state) => state.completeCollection);
-  const collectionStartTime = useGameStore((state) => state.collectionStartTime);
-  const collectionDuration = useGameStore((state) => state.collectionDuration);
-  const getEstimatedCollectionTime = useGameStore((state) => state.getEstimatedCollectionTime);
   const collectArtifact = useGameStore((state) => state.collectArtifact);
+  const collectItem = useGameStore((state) => state.collectItem);
+  const getCargoCount = useGameStore((state) => state.getCargoCount);
+  const getMaxCargo = useGameStore((state) => state.getMaxCargo);
   
   const movementProgress = useRef(0);
   const lastTime = useRef(performance.now());
@@ -139,7 +136,7 @@ export function MovementController() {
   const lastTargetPosition = useRef<Position | null>(null);
   
   useEffect(() => {
-    if (targetPosition && !isCollecting) {
+    if (targetPosition) {
       // Prevent duplicate pathfinding for the same target
       if (lastTargetPosition.current && 
           lastTargetPosition.current.x === targetPosition.x && 
@@ -207,7 +204,7 @@ export function MovementController() {
       // Reset when target is cleared
       lastTargetPosition.current = null;
     }
-  }, [targetPosition, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
+  }, [targetPosition, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
   
   useEffect(() => {
     let animationFrameId: number;
@@ -218,15 +215,6 @@ export function MovementController() {
       lastTime.current = now;
       
       const state = useGameStore.getState();
-      
-      if (state.isCollecting && state.collectionStartTime && state.collectionDuration) {
-        const elapsed = Date.now() - state.collectionStartTime;
-        if (elapsed >= state.collectionDuration) {
-          completeCollection();
-        }
-        animationFrameId = requestAnimationFrame(animate);
-        return;
-      }
       
       if (!state.isMoving || state.currentPath.length === 0) {
         animationFrameId = requestAnimationFrame(animate);
@@ -286,7 +274,17 @@ export function MovementController() {
             );
             
             if (collectible) {
-              startCollection(collectible.id);
+              // Check cargo capacity before collecting
+              const cargoCount = getCargoCount();
+              const maxCargo = getMaxCargo();
+              
+              if (cargoCount >= maxCargo) {
+                console.log("Cargo hold is full! Return to Watropolis to sell materials.");
+              } else {
+                // Instantly collect the item
+                collectItem(collectible.id);
+                console.log(`Collected ${collectible.type} (richness ${collectible.richness}) instantly!`);
+              }
             }
           }
         } else {
@@ -306,7 +304,7 @@ export function MovementController() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isCollecting, collectionStartTime, collectionDuration, player, updateVisualPosition, setPlayerRotation, updatePlayerPosition, setPath, setIsMoving, clearHighlights, collectArtifact, startCollection, getEstimatedCollectionTime, highlightPath, completeCollection, artifacts, collectibles]);
+  }, [player, updateVisualPosition, setPlayerRotation, updatePlayerPosition, setPath, setIsMoving, clearHighlights, collectArtifact, collectItem, getCargoCount, getMaxCargo, highlightPath, artifacts, collectibles]);
   
   return null;
 }
