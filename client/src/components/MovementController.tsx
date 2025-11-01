@@ -136,26 +136,63 @@ export function MovementController() {
   const movementProgress = useRef(0);
   const lastTime = useRef(performance.now());
   const TILE_TRANSITION_TIME = 600;
+  const rerouteStart = useRef<{ x: number; y: number } | null>(null);
+  const segmentDuration = useRef(TILE_TRANSITION_TIME);
   
   useEffect(() => {
-    if (targetPosition && !isMoving && !isCollecting) {
-      const path = findPath(player.position, targetPosition, gridSize, tiles);
+    if (targetPosition && !isCollecting) {
+      let pathStart = player.position;
+      
+      if (isMoving && currentPath.length > 0) {
+        pathStart = currentPath[0];
+        
+        rerouteStart.current = {
+          x: player.visualPosition.x,
+          y: player.visualPosition.y
+        };
+        
+        const nextTile = currentPath[0];
+        const dx_full = nextTile.x - player.position.x;
+        const dy_full = nextTile.y - player.position.y;
+        const fullDistance = Math.sqrt(dx_full * dx_full + dy_full * dy_full);
+        
+        const dx_remaining = nextTile.x - player.visualPosition.x;
+        const dy_remaining = nextTile.y - player.visualPosition.y;
+        const remainingDistance = Math.sqrt(dx_remaining * dx_remaining + dy_remaining * dy_remaining);
+        
+        const remainingFraction = remainingDistance / fullDistance;
+        segmentDuration.current = remainingFraction * TILE_TRANSITION_TIME;
+        
+        movementProgress.current = 0;
+      }
+      
+      const path = findPath(pathStart, targetPosition, gridSize, tiles);
       
       if (path.length > 0) {
-        const distance = path.length;
+        let finalPath = path;
+        
+        if (isMoving && currentPath.length > 0) {
+          finalPath = [currentPath[0], ...path];
+        }
+        
+        const distance = finalPath.length;
         const travelTime = getTravelTime(distance);
-        console.log(`Path found with ${path.length} steps, ETA: ${(travelTime / 1000).toFixed(1)}s`);
-        setPath(path);
-        highlightPath(path);
+        if (isMoving) {
+          console.log(`Path recalculated with ${finalPath.length} steps, ETA: ${(travelTime / 1000).toFixed(1)}s`);
+        } else {
+          console.log(`Path found with ${finalPath.length} steps, ETA: ${(travelTime / 1000).toFixed(1)}s`);
+          movementProgress.current = 0;
+        }
+        setPath(finalPath);
+        highlightPath(finalPath);
         setIsMoving(true);
         startTravel(travelTime);
-        movementProgress.current = 0;
       } else {
         console.log("No path found to target");
         setTargetPosition(null);
       }
     }
-  }, [targetPosition, player.position, isMoving, isCollecting, gridSize, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
+  }, [targetPosition, player.position, player.visualPosition, isMoving, currentPath, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel, updatePlayerPosition, updateVisualPosition]);
   
   useEffect(() => {
     let animationFrameId: number;
@@ -184,10 +221,16 @@ export function MovementController() {
       movementProgress.current += delta * 1000;
       
       const nextPosition = state.currentPath[0];
-      const t = Math.min(movementProgress.current / TILE_TRANSITION_TIME, 1);
+      const t = Math.min(movementProgress.current / segmentDuration.current, 1);
       
-      const currentX = state.player.position.x;
-      const currentY = state.player.position.y;
+      let currentX = state.player.position.x;
+      let currentY = state.player.position.y;
+      
+      if (rerouteStart.current) {
+        currentX = rerouteStart.current.x;
+        currentY = rerouteStart.current.y;
+      }
+      
       const targetX = nextPosition.x;
       const targetY = nextPosition.y;
       
@@ -203,8 +246,10 @@ export function MovementController() {
         setPlayerRotation(rotation);
       }
       
-      if (movementProgress.current >= TILE_TRANSITION_TIME) {
+      if (movementProgress.current >= segmentDuration.current) {
         updatePlayerPosition(nextPosition);
+        rerouteStart.current = null;
+        segmentDuration.current = TILE_TRANSITION_TIME;
         
         const remainingPath = state.currentPath.slice(1);
         setPath(remainingPath);

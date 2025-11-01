@@ -40,56 +40,85 @@ export function EnemyAIController() {
   const updateEnemyShip = useGameStore((state) => state.updateEnemyShip);
   
   const lastUpdateTime = useRef(performance.now());
+  const shipProgress = useRef<Map<string, number>>(new Map());
+  const TILE_TRANSITION_TIME = 600;
   
   useEffect(() => {
-    const updateInterval = setInterval(() => {
-      const now = Date.now();
-      const deltaTime = (now - lastUpdateTime.current) / 1000;
+    let animationFrameId: number;
+    
+    const animate = () => {
+      const now = performance.now();
+      const delta = now - lastUpdateTime.current;
       lastUpdateTime.current = now;
       
+      const currentTime = Date.now();
+      
       enemyShips.forEach(ship => {
-        if (ship.currentPath.length === 0 && now >= ship.nextMoveTime) {
+        if (ship.currentPath.length === 0 && currentTime >= ship.nextMoveTime) {
           const newPath = findRandomPath(ship.position, gridSize, tiles);
-          updateEnemyShip({
-            ...ship,
-            currentPath: newPath,
-            nextMoveTime: now + Math.random() * 8000 + 5000,
-          });
+          if (newPath.length > 0) {
+            updateEnemyShip({
+              ...ship,
+              currentPath: newPath,
+              nextMoveTime: currentTime + Math.random() * 8000 + 5000,
+            });
+            shipProgress.current.set(ship.id, 0);
+          }
         }
         
         if (ship.currentPath.length > 0) {
-          const nextPos = ship.currentPath[0];
-          const dx = nextPos.x - ship.visualPosition.x;
-          const dy = nextPos.y - ship.visualPosition.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+          const currentProgress = shipProgress.current.get(ship.id) || 0;
+          const newProgress = currentProgress + delta;
           
-          if (distance < 0.05) {
+          const nextPos = ship.currentPath[0];
+          const t = Math.min(newProgress / TILE_TRANSITION_TIME, 1);
+          
+          const currentX = ship.position.x;
+          const currentY = ship.position.y;
+          const targetX = nextPos.x;
+          const targetY = nextPos.y;
+          
+          const visualX = currentX + (targetX - currentX) * t;
+          const visualY = currentY + (targetY - currentY) * t;
+          
+          const dx = targetX - currentX;
+          const dy = targetY - currentY;
+          const rotation = dx !== 0 || dy !== 0 ? Math.atan2(dy, dx) : ship.rotation;
+          
+          if (newProgress >= TILE_TRANSITION_TIME) {
             const newPath = ship.currentPath.slice(1);
             updateEnemyShip({
               ...ship,
               position: nextPos,
               visualPosition: { x: nextPos.x, y: nextPos.y },
               currentPath: newPath,
-              rotation: Math.atan2(dy, dx),
+              rotation,
             });
+            shipProgress.current.set(ship.id, 0);
           } else {
-            const moveAmount = ship.moveSpeed * deltaTime;
-            const ratio = Math.min(moveAmount / distance, 1);
-            
             updateEnemyShip({
               ...ship,
               visualPosition: {
-                x: ship.visualPosition.x + dx * ratio,
-                y: ship.visualPosition.y + dy * ratio,
+                x: visualX,
+                y: visualY,
               },
-              rotation: Math.atan2(dy, dx),
+              rotation,
             });
+            shipProgress.current.set(ship.id, newProgress);
           }
         }
       });
-    }, 100);
+      
+      animationFrameId = requestAnimationFrame(animate);
+    };
     
-    return () => clearInterval(updateInterval);
+    animationFrameId = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
   }, [enemyShips, gridSize, tiles, updateEnemyShip]);
   
   return null;
