@@ -1271,28 +1271,7 @@ export const useGameStore = create<GameState>()(
     },
     
     checkAutoCollect: () => {
-      const state = get();
-      
-      if (state.combatState.isInCombat || state.isCollecting) {
-        return;
-      }
-      
-      const playerPos = state.player.position;
-      const collectiblesInRange = state.collectibles.filter(collectible => {
-        const distance = Math.abs(collectible.position.x - playerPos.x) + Math.abs(collectible.position.y - playerPos.y);
-        return distance <= 2;
-      });
-      
-      if (collectiblesInRange.length > 0 && !state.isMoving) {
-        const nearest = collectiblesInRange.reduce((nearest, collectible) => {
-          const nearestDist = Math.abs(nearest.position.x - playerPos.x) + Math.abs(nearest.position.y - playerPos.y);
-          const collectibleDist = Math.abs(collectible.position.x - playerPos.x) + Math.abs(collectible.position.y - playerPos.y);
-          return collectibleDist < nearestDist ? collectible : nearest;
-        });
-        
-        console.log(`Auto-collecting ${nearest.type} at distance ${Math.abs(nearest.position.x - playerPos.x) + Math.abs(nearest.position.y - playerPos.y)}`);
-        get().startCollection(nearest.id);
-      }
+      // Auto-collection removed - items are now collected instantly upon arrival
     },
   };
   })
