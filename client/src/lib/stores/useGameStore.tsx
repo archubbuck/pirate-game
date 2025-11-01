@@ -108,9 +108,6 @@ export interface CrewMember {
   visualPosition: { x: number; y: number };
   state: CrewState;
   deployedAt: number | null;
-  collectingItemId: string | null;
-  collectionStartTime: number | null;
-  collectionDuration: number | null;
   driftStartTime: number | null;
   poachingEnemyId: string | null;
   poachStartTime: number | null;
@@ -152,11 +149,6 @@ interface GameState {
   targetPosition: Position | null;
   travelStartTime: number | null;
   travelDuration: number | null;
-  
-  isCollecting: boolean;
-  collectionStartTime: number | null;
-  collectionDuration: number | null;
-  collectingItemId: string | null;
   
   hoveredTile: Position | null;
   
@@ -235,9 +227,6 @@ interface GameState {
   updateCameraTransform: (transform: { pivotX: number; pivotY: number; scale: number; containerX: number; containerY: number }) => void;
   
   startTravel: (duration: number) => void;
-  startCollection: (itemId: string) => void;
-  cancelCollection: () => void;
-  completeCollection: () => void;
   
   revealTilesAround: (position: Position, radius: number) => void;
   highlightPath: (path: Position[]) => void;
@@ -246,7 +235,6 @@ interface GameState {
   
   getDistance: (from: Position, to: Position) => number;
   getTravelTime: (distance: number) => number;
-  getEstimatedCollectionTime: (itemId: string) => number;
   getCargoCount: () => number;
   getMaxCargo: () => number;
   getCurrency: () => Record<string, number>;
@@ -365,9 +353,6 @@ const createInitialCrew = (): CrewMember[] => {
     visualPosition: { x: 20, y: 20 },
     state: "idle" as CrewState,
     deployedAt: null,
-    collectingItemId: null,
-    collectionStartTime: null,
-    collectionDuration: null,
     driftStartTime: null,
     poachingEnemyId: null,
     poachStartTime: null,
@@ -617,11 +602,6 @@ export const useGameStore = create<GameState>()(
     travelStartTime: null,
     travelDuration: null,
     
-    isCollecting: false,
-    collectionStartTime: null,
-    collectionDuration: null,
-    collectingItemId: null,
-    
     hoveredTile: null,
     
     gridSize: GRID_SIZE,
@@ -732,31 +712,15 @@ export const useGameStore = create<GameState>()(
     },
     
     setTargetPositionWithConfirmation: (position: Position | null) => {
-      if (get().isCollecting) {
-        set({ 
-          showCancelConfirmation: true,
-          pendingTargetPosition: position 
-        });
-      } else {
-        set({ targetPosition: position });
-      }
+      set({ targetPosition: position });
     },
     
     confirmCancelCollection: () => {
-      const pendingTarget = get().pendingTargetPosition;
-      get().cancelCollection();
-      set({ 
-        showCancelConfirmation: false,
-        targetPosition: pendingTarget,
-        pendingTargetPosition: null 
-      });
+      // No longer needed - collection is instant
     },
     
     dismissCancelConfirmation: () => {
-      set({ 
-        showCancelConfirmation: false,
-        pendingTargetPosition: null 
-      });
+      // No longer needed - collection is instant
     },
     
     updatePlayerPosition: (position: Position) => {
@@ -1155,26 +1119,6 @@ export const useGameStore = create<GameState>()(
       return (distance * baseSpeed) / engineLevel * speedBoost;
     },
     
-    getEstimatedCollectionTime: (itemId: string) => {
-      const collectible = get().collectibles.find(c => c.id === itemId);
-      if (!collectible) return 0;
-      
-      const salvageRigLevel = get().shipUpgrades.salvageRig;
-      const scannerLevel = get().shipUpgrades.scanner;
-      
-      // Calculate actual collection time with salvage rig bonus
-      const actualTime = collectible.collectionTime / salvageRigLevel;
-      
-      // Apply scanner accuracy variance (60% at level 1, 100% at level 5)
-      const minAccuracy = 0.6;
-      const maxAccuracy = 1.0;
-      const accuracy = minAccuracy + ((maxAccuracy - minAccuracy) * (scannerLevel - 1) / 4);
-      const variance = 1 - accuracy;
-      const randomFactor = 1 - variance + (Math.random() * variance * 2);
-      
-      return actualTime * randomFactor;
-    },
-    
     getCargoCount: () => {
       return get().collectedItems.length;
     },
@@ -1188,54 +1132,6 @@ export const useGameStore = create<GameState>()(
       set({
         travelStartTime: Date.now(),
         travelDuration: duration,
-      });
-    },
-    
-    startCollection: (itemId: string) => {
-      const cargoCount = get().getCargoCount();
-      const maxCargo = get().getMaxCargo();
-      
-      if (cargoCount >= maxCargo) {
-        console.log("Cargo hold is full! Return to Watropolis to sell materials.");
-        return;
-      }
-      
-      const collectible = get().collectibles.find(c => c.id === itemId);
-      if (!collectible) return;
-      
-      const salvageRigLevel = get().shipUpgrades.salvageRig;
-      const actualDuration = collectible.collectionTime / salvageRigLevel;
-      
-      set({
-        isCollecting: true,
-        collectionStartTime: Date.now(),
-        collectionDuration: actualDuration,
-        collectingItemId: itemId,
-      });
-      
-      console.log(`Starting collection of ${collectible.type} (richness ${collectible.richness}), actual time: ${(actualDuration / 1000).toFixed(1)}s`);
-    },
-    
-    cancelCollection: () => {
-      set({
-        isCollecting: false,
-        collectionStartTime: null,
-        collectionDuration: null,
-        collectingItemId: null,
-      });
-      console.log("Collection cancelled - resources forfeited");
-    },
-    
-    completeCollection: () => {
-      const itemId = get().collectingItemId;
-      if (itemId) {
-        get().collectItem(itemId);
-      }
-      set({
-        isCollecting: false,
-        collectionStartTime: null,
-        collectionDuration: null,
-        collectingItemId: null,
       });
     },
     
