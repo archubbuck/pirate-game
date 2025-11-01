@@ -14,6 +14,7 @@ export class PixiTerrain {
   private destroyMargin: number = 10;
   private hexWidth: number;
   private hexHeight: number;
+  private lastPlayerPos: { x: number; y: number } | null = null;
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
@@ -64,7 +65,7 @@ export class PixiTerrain {
     return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
   }
 
-  private createTile(x: number, y: number, tile: any) {
+  private createTile(x: number, y: number, tile: any, playerX?: number, playerY?: number) {
     const key = `${x}-${y}`;
     
     if (this.tileGraphics.has(key)) {
@@ -95,7 +96,7 @@ export class PixiTerrain {
       }
     });
 
-    this.renderTile(x, y, tile);
+    this.renderTile(x, y, tile, playerX, playerY);
   }
 
   private destroyTile(key: string) {
@@ -107,7 +108,7 @@ export class PixiTerrain {
     }
   }
 
-  private renderTile(x: number, y: number, tile: any) {
+  private renderTile(x: number, y: number, tile: any, playerX?: number, playerY?: number) {
     const key = `${x}-${y}`;
     const graphics = this.tileGraphics.get(key);
     if (!graphics) return;
@@ -116,10 +117,23 @@ export class PixiTerrain {
     const { posX, posY } = this.getHexPosition(x, y);
 
     const baseColor = this.tileColors.get(key) || 0x2685ad;
+    
+    let lightMultiplier = 1.0;
+    if (playerX !== undefined && playerY !== undefined) {
+      const distance = this.getHexDistance(x, y, playerX, playerY);
+      const maxLightDistance = 10;
+      const lightFalloff = Math.max(0, 1 - (distance / maxLightDistance));
+      lightMultiplier = 0.4 + (lightFalloff * 0.6);
+    }
+    
+    const r = ((baseColor >> 16) & 0xFF) * lightMultiplier;
+    const g = ((baseColor >> 8) & 0xFF) * lightMultiplier;
+    const b = (baseColor & 0xFF) * lightMultiplier;
+    const litColor = (Math.floor(r) << 16) | (Math.floor(g) << 8) | Math.floor(b);
 
     tileGraphic.clear();
     this.drawHexagon(tileGraphic, posX, posY);
-    tileGraphic.fill({ color: baseColor, alpha: 1 });
+    tileGraphic.fill({ color: litColor, alpha: 1 });
 
     borderGraphic.clear();
     this.drawHexagon(borderGraphic, posX, posY);
@@ -152,6 +166,13 @@ export class PixiTerrain {
     const maxTileY = Math.min(gridSize - 1, centerY + hexViewRadius);
 
     const visibleTileKeys = new Set<string>();
+    const playerMoved = !this.lastPlayerPos || 
+                       this.lastPlayerPos.x !== centerX || 
+                       this.lastPlayerPos.y !== centerY;
+    
+    if (playerMoved) {
+      this.lastPlayerPos = { x: centerX, y: centerY };
+    }
     
     for (let y = minTileY; y <= maxTileY; y++) {
       for (let x = minTileX; x <= maxTileX; x++) {
@@ -165,9 +186,9 @@ export class PixiTerrain {
           const wasExplored = this.lastExploredState.get(key);
 
           if (!this.tileGraphics.has(key)) {
-            this.createTile(x, y, tile);
-          } else if (tile.isExplored !== wasExplored) {
-            this.renderTile(x, y, tile);
+            this.createTile(x, y, tile, centerX, centerY);
+          } else if (tile.isExplored !== wasExplored || playerMoved) {
+            this.renderTile(x, y, tile, centerX, centerY);
             this.lastExploredState.set(key, tile.isExplored);
           }
           
