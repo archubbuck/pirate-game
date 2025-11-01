@@ -1,11 +1,23 @@
 import * as PIXI from "pixi.js";
 import { useGameStore } from "@/lib/stores/useGameStore";
+import { useSkillsStore } from "@/lib/stores/useSkillsStore";
+
+function getShipTextureForLevel(sailingLevel: number): string {
+  if (sailingLevel >= 60) return "/textures/ships/ship5.png";
+  if (sailingLevel >= 40) return "/textures/ships/ship4.png";
+  if (sailingLevel >= 20) return "/textures/ships/ship3.png";
+  if (sailingLevel >= 10) return "/textures/ships/ship2.png";
+  return "/textures/ships/ship1.png";
+}
 
 export class PixiPlayer {
   private container: PIXI.Container;
   private shipContainer: PIXI.Container;
   private tileSize: number = 40;
-  private shipGraphics: PIXI.Graphics;
+  private shipSprite: PIXI.Sprite | null = null;
+  private textures: Map<string, PIXI.Texture> = new Map();
+  private currentSailingLevel: number = 1;
+  private isLoadingTextures: boolean = false;
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
@@ -13,47 +25,71 @@ export class PixiPlayer {
     parent.addChild(this.container);
     this.container.addChild(this.shipContainer);
 
-    this.shipGraphics = new PIXI.Graphics();
-    this.shipContainer.addChild(this.shipGraphics);
+    this.loadTextures();
+  }
 
-    this.createShip();
+  private async loadTextures() {
+    this.isLoadingTextures = true;
+    
+    const shipPaths = [
+      "/textures/ships/ship1.png",
+      "/textures/ships/ship2.png",
+      "/textures/ships/ship3.png",
+      "/textures/ships/ship4.png",
+      "/textures/ships/ship5.png",
+    ];
+
+    try {
+      for (const path of shipPaths) {
+        const texture = await PIXI.Assets.load(path);
+        this.textures.set(path, texture);
+      }
+      
+      this.isLoadingTextures = false;
+      this.createShip();
+    } catch (error) {
+      console.error("Failed to load ship textures:", error);
+      this.isLoadingTextures = false;
+    }
   }
 
   private createShip() {
-    this.shipGraphics.clear();
+    const sailingLevel = useSkillsStore.getState().skills.sailing.level;
+    const texturePath = getShipTextureForLevel(sailingLevel);
+    const texture = this.textures.get(texturePath);
+
+    if (!texture) {
+      console.warn(`Texture not found for path: ${texturePath}`);
+      return;
+    }
+
+    if (this.shipSprite) {
+      this.shipSprite.destroy();
+    }
+
+    this.shipSprite = new PIXI.Sprite(texture);
+    this.shipSprite.anchor.set(0.5, 0.5);
     
-    this.shipGraphics.moveTo(0, -18);
-    this.shipGraphics.lineTo(-12, 12);
-    this.shipGraphics.lineTo(0, 8);
-    this.shipGraphics.lineTo(12, 12);
-    this.shipGraphics.closePath();
-    this.shipGraphics.fill({ color: 0x654321 });
-    this.shipGraphics.stroke({ color: 0x4a3517, width: 2 });
+    const scale = 0.15;
+    this.shipSprite.scale.set(scale);
     
-    this.shipGraphics.rect(-8, -8, 16, 10);
-    this.shipGraphics.fill({ color: 0x8b5a3c });
-    this.shipGraphics.stroke({ color: 0x654321, width: 1 });
+    this.shipContainer.addChild(this.shipSprite);
+    this.currentSailingLevel = sailingLevel;
+  }
+
+  private updateShipTexture() {
+    const sailingLevel = useSkillsStore.getState().skills.sailing.level;
     
-    this.shipGraphics.rect(-2, -18, 4, 12);
-    this.shipGraphics.fill({ color: 0xa0826d });
-    
-    this.shipGraphics.moveTo(2, -16);
-    this.shipGraphics.lineTo(10, -12);
-    this.shipGraphics.lineTo(10, -8);
-    this.shipGraphics.lineTo(2, -10);
-    this.shipGraphics.closePath();
-    this.shipGraphics.fill({ color: 0xe6d5c3 });
-    this.shipGraphics.stroke({ color: 0xb89968, width: 1 });
-    
-    this.shipGraphics.circle(0, 0, 3);
-    this.shipGraphics.fill({ color: 0xffcc00 });
-    this.shipGraphics.stroke({ color: 0xd4a000, width: 1 });
-    
-    this.shipGraphics.moveTo(-3, 10);
-    this.shipGraphics.lineTo(3, 10);
-    this.shipGraphics.lineTo(0, 13);
-    this.shipGraphics.closePath();
-    this.shipGraphics.fill({ color: 0x4169e1 });
+    if (sailingLevel !== this.currentSailingLevel) {
+      const texturePath = getShipTextureForLevel(sailingLevel);
+      const texture = this.textures.get(texturePath);
+      
+      if (texture && this.shipSprite) {
+        this.shipSprite.texture = texture;
+        this.currentSailingLevel = sailingLevel;
+        console.log(`Ship upgraded to level ${sailingLevel} variant!`);
+      }
+    }
   }
 
   public update() {
@@ -65,10 +101,19 @@ export class PixiPlayer {
     
     this.container.position.set(posX, posY);
     this.shipContainer.rotation = rotation;
+    
+    if (!this.isLoadingTextures && this.shipSprite) {
+      this.updateShipTexture();
+    }
   }
 
   public destroy() {
-    this.shipGraphics.destroy();
+    if (this.shipSprite) {
+      this.shipSprite.destroy();
+    }
     this.container.destroy();
+    
+    this.textures.forEach(texture => texture.destroy());
+    this.textures.clear();
   }
 }
