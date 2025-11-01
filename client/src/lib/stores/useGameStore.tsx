@@ -20,7 +20,6 @@ export interface Collectible {
   position: Position;
   type: "timber" | "alloy" | "circuit" | "biofiber";
   richness: number;
-  collectionTime: number;
 }
 
 export interface CollectedItem {
@@ -265,26 +264,6 @@ const createInitialTiles = (): Tile[][] => {
   return tiles;
 };
 
-// Collection timing constants (in milliseconds)
-const COLLECTION_BASE_TIMES = {
-  timber: 4000,      // Most common, quickest (4s)
-  alloy: 6000,       // Heavy materials take longer (6s)
-  circuit: 5000,     // Delicate electronics (5s)
-  biofiber: 4500,    // Organic materials (4.5s)
-};
-
-const RICHNESS_MULTIPLIERS = [1, 1.5, 2]; // Indexed by (richness - 1)
-
-// Calculate deterministic collection time based on resource type and richness
-function calculateCollectionTime(
-  type: "timber" | "alloy" | "circuit" | "biofiber",
-  richness: number
-): number {
-  const baseTime = COLLECTION_BASE_TIMES[type];
-  const multiplier = RICHNESS_MULTIPLIERS[richness - 1] || 1;
-  return baseTime * multiplier;
-}
-
 const createInitialPlayer = (): Player => ({
   position: { x: 20, y: 20 },
   visualPosition: { x: 20, y: 20 },
@@ -315,14 +294,12 @@ const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifa
     
     const richness = Math.floor(Math.random() * 3) + 1;
     const type = types[Math.floor(Math.random() * types.length)];
-    const collectionTime = calculateCollectionTime(type, richness);
     
     collectibles.push({
       id: `collectible-${i}`,
       position,
       type,
       richness,
-      collectionTime,
     });
   }
   
@@ -894,7 +871,6 @@ export const useGameStore = create<GameState>()(
               type: type as "timber" | "alloy" | "circuit" | "biofiber",
               position: { x: enemy.position.x, y: enemy.position.y },
               richness: 3,
-              collectionTime: 2000,
             });
           }
         });
