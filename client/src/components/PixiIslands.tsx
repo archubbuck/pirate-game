@@ -2,10 +2,22 @@ import * as PIXI from "pixi.js";
 import { useGameStore, type Island } from "@/lib/stores/useGameStore";
 import type { PixiCamera } from "./PixiCamera";
 
+interface IslandBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  worldMinX: number;
+  worldMaxX: number;
+  worldMinY: number;
+  worldMaxY: number;
+}
+
 export class PixiIslands {
   private container: PIXI.Container;
   private tileSize: number = 40;
   private islandGraphics: Map<string, PIXI.Container> = new Map();
+  private islandBounds: Map<string, IslandBounds> = new Map();
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
@@ -19,6 +31,22 @@ export class PixiIslands {
     const minY = Math.min(...island.positions.map(p => p.y));
     const maxX = Math.max(...island.positions.map(p => p.x));
     const maxY = Math.max(...island.positions.map(p => p.y));
+    
+    const worldMinX = minX * this.tileSize;
+    const worldMaxX = (maxX + 1) * this.tileSize;
+    const worldMinY = minY * this.tileSize;
+    const worldMaxY = (maxY + 1) * this.tileSize;
+    
+    this.islandBounds.set(island.id, {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      worldMinX,
+      worldMaxX,
+      worldMinY,
+      worldMaxY,
+    });
     
     const grassShades = [0x2d5016, 0x3a6120, 0x2a4e14, 0x35581c, 0x2f5318];
     
@@ -71,19 +99,12 @@ export class PixiIslands {
     this.islandGraphics.set(island.id, islandContainer);
   }
 
-  private isInViewport(island: Island, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const minX = Math.min(...island.positions.map(p => p.x));
-    const minY = Math.min(...island.positions.map(p => p.y));
-    const maxX = Math.max(...island.positions.map(p => p.x));
-    const maxY = Math.max(...island.positions.map(p => p.y));
+  private isInViewport(islandId: string, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
+    const cachedBounds = this.islandBounds.get(islandId);
+    if (!cachedBounds) return false;
     
-    const worldMinX = minX * this.tileSize;
-    const worldMaxX = (maxX + 1) * this.tileSize;
-    const worldMinY = minY * this.tileSize;
-    const worldMaxY = (maxY + 1) * this.tileSize;
-    
-    return !(worldMaxX < bounds.minX || worldMinX > bounds.maxX || 
-             worldMaxY < bounds.minY || worldMinY > bounds.maxY);
+    return !(cachedBounds.worldMaxX < bounds.minX || cachedBounds.worldMinX > bounds.maxX || 
+             cachedBounds.worldMaxY < bounds.minY || cachedBounds.worldMinY > bounds.maxY);
   }
 
   public update(camera?: PixiCamera) {
@@ -91,13 +112,18 @@ export class PixiIslands {
     const bounds = camera?.getViewportBounds();
 
     const visibleIslands = bounds 
-      ? islands.filter(island => this.isInViewport(island, bounds))
+      ? islands.filter(island => this.isInViewport(island.id, bounds))
       : islands;
 
-    const currentIds = new Set(visibleIslands.map(i => i.id));
+    const allIslandIds = new Set(islands.map(i => i.id));
+    const visibleIds = new Set(visibleIslands.map(i => i.id));
     
     this.islandGraphics.forEach((graphics, id) => {
-      if (!currentIds.has(id)) {
+      if (!allIslandIds.has(id)) {
+        graphics.destroy();
+        this.islandGraphics.delete(id);
+        this.islandBounds.delete(id);
+      } else if (!visibleIds.has(id)) {
         graphics.visible = false;
       }
     });
@@ -115,6 +141,7 @@ export class PixiIslands {
   public destroy() {
     this.islandGraphics.forEach(graphics => graphics.destroy());
     this.islandGraphics.clear();
+    this.islandBounds.clear();
     this.container.destroy();
   }
 }

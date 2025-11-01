@@ -6,6 +6,7 @@ export class PixiEnemyShips {
   private container: PIXI.Container;
   private tileSize: number = 40;
   private shipGraphics: Map<string, PIXI.Container> = new Map();
+  private lastHealthValues: Map<string, number> = new Map();
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
@@ -72,6 +73,7 @@ export class PixiEnemyShips {
     
     this.container.addChild(shipContainer);
     this.shipGraphics.set(ship.id, shipContainer);
+    this.lastHealthValues.set(ship.id, ship.health);
   }
 
   private isInViewport(ship: EnemyShip, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
@@ -96,6 +98,7 @@ export class PixiEnemyShips {
       if (!currentIds.has(id)) {
         graphics.destroy();
         this.shipGraphics.delete(id);
+        this.lastHealthValues.delete(id);
       }
     });
 
@@ -117,13 +120,17 @@ export class PixiEnemyShips {
         existing.rotation = ship.rotation;
         existing.visible = true;
         
-        const healthBarFg = existing.children[2] as PIXI.Graphics;
-        if (healthBarFg) {
-          healthBarFg.clear();
-          const healthPercent = ship.health / ship.maxHealth;
-          const healthColor = healthPercent > 0.5 ? 0x44aa44 : healthPercent > 0.25 ? 0xffaa00 : 0xdd3333;
-          healthBarFg.rect(-12, 14, 24 * healthPercent, 4);
-          healthBarFg.fill({ color: healthColor });
+        const lastHealth = this.lastHealthValues.get(ship.id);
+        if (lastHealth !== ship.health) {
+          const healthBarFg = existing.children[2] as PIXI.Graphics;
+          if (healthBarFg) {
+            healthBarFg.clear();
+            const healthPercent = ship.health / ship.maxHealth;
+            const healthColor = healthPercent > 0.5 ? 0x44aa44 : healthPercent > 0.25 ? 0xffaa00 : 0xdd3333;
+            healthBarFg.rect(-12, 14, 24 * healthPercent, 4);
+            healthBarFg.fill({ color: healthColor });
+          }
+          this.lastHealthValues.set(ship.id, ship.health);
         }
       }
     });
@@ -132,6 +139,7 @@ export class PixiEnemyShips {
   public destroy() {
     this.shipGraphics.forEach(graphics => graphics.destroy());
     this.shipGraphics.clear();
+    this.lastHealthValues.clear();
     this.container.destroy();
   }
 }

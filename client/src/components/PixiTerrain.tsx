@@ -166,6 +166,8 @@ export class PixiTerrain {
       border.destroy();
     });
     this.tileGraphics.clear();
+    this.lastExploredState.clear();
+    this.tileColors.clear();
     this.container.destroy();
   }
 }
