@@ -20,6 +20,7 @@ import { PixiEnemyShips } from "./PixiEnemyShips";
 import { PixiCrewMembers } from "./PixiCrewMember";
 import { PixiCamera } from "./PixiCamera";
 import { EnemyAIController } from "./EnemyAIController";
+import { CrewController } from "./CrewController";
 import { CombatUI } from "./CombatUI";
 
 export function Game() {
@@ -175,6 +176,7 @@ export function Game() {
       
       <MovementController />
       <EnemyAIController />
+      <CrewController />
       <HUD />
       <CombatUI />
       <Inventory />

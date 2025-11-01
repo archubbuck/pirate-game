@@ -113,6 +113,18 @@ export interface CrewMember {
   poachStartTime: number | null;
 }
 
+export interface Cove {
+  id: string;
+  position: Position;
+  hasCrewMember: boolean;
+  crewMemberRecruitCost: number;
+  lootTable: {
+    type: "timber" | "alloy" | "circuit" | "biofiber";
+    quantity: number;
+  }[];
+  looted: boolean;
+}
+
 interface GameState {
   phase: GamePhase;
   
@@ -124,6 +136,8 @@ interface GameState {
   artifacts: Artifact[];
   islands: Island[];
   selectedIsland: Island | null;
+  coves: Cove[];
+  selectedCove: Cove | null;
   enemyShips: EnemyShip[];
   combatState: CombatState;
   crewMembers: CrewMember[];
@@ -255,7 +269,7 @@ const createInitialPlayer = (): Player => ({
   visualPosition: { x: 20, y: 20 },
 });
 
-const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifacts: Artifact[], islands: Island[] } => {
+const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifacts: Artifact[], islands: Island[], occupied: Set<string> } => {
   const occupied = new Set<string>();
   occupied.add("20,20");
   
@@ -292,7 +306,7 @@ const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifa
   
   const artifacts = createArtifacts(occupied);
   
-  return { collectibles, artifacts, islands };
+  return { collectibles, artifacts, islands, occupied };
 };
 
 const createMapUnlocks = (): MapUnlock[] => [
@@ -324,6 +338,47 @@ const createInitialCrew = (): CrewMember[] => {
     poachingEnemyId: null,
     poachStartTime: null,
   }));
+};
+
+const createCoves = (occupied: Set<string>): Cove[] => {
+  const coves: Cove[] = [];
+  const coveCount = 4;
+  const types: ("timber" | "alloy" | "circuit" | "biofiber")[] = ["timber", "alloy", "circuit", "biofiber"];
+  
+  for (let i = 0; i < coveCount; i++) {
+    let position: Position;
+    let posKey: string;
+    
+    do {
+      position = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+      };
+      posKey = `${position.x},${position.y}`;
+    } while (occupied.has(posKey));
+    
+    occupied.add(posKey);
+    
+    const lootCount = Math.floor(Math.random() * 3) + 1;
+    const lootTable = [];
+    for (let j = 0; j < lootCount; j++) {
+      lootTable.push({
+        type: types[Math.floor(Math.random() * types.length)],
+        quantity: Math.floor(Math.random() * 3) + 1,
+      });
+    }
+    
+    coves.push({
+      id: `cove-${i}`,
+      position,
+      hasCrewMember: Math.random() > 0.5,
+      crewMemberRecruitCost: 100,
+      lootTable,
+      looted: false,
+    });
+  }
+  
+  return coves;
 };
 
 const createIslands = (occupied: Set<string>): Island[] => {
@@ -485,9 +540,9 @@ const createEnemyShips = (occupied: Set<string>): EnemyShip[] => {
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector((set, get) => {
-    const { collectibles, artifacts, islands } = createCollectiblesAndArtifacts();
+    const { collectibles, artifacts, islands, occupied } = createCollectiblesAndArtifacts();
     const tiles = createInitialTiles();
-    const occupied = new Set<string>();
+    const coves = createCoves(occupied);
     const enemyShips = createEnemyShips(occupied);
     
     islands.forEach(island => {
@@ -509,6 +564,8 @@ export const useGameStore = create<GameState>()(
     artifacts,
     islands,
     selectedIsland: null,
+    coves,
+    selectedCove: null,
     enemyShips,
     combatState: {
       isInCombat: false,
@@ -565,9 +622,9 @@ export const useGameStore = create<GameState>()(
     
     restart: () => {
       const initialPlayer = createInitialPlayer();
-      const { collectibles, artifacts, islands } = createCollectiblesAndArtifacts();
+      const { collectibles, artifacts, islands, occupied } = createCollectiblesAndArtifacts();
       const tiles = createInitialTiles();
-      const occupied = new Set<string>();
+      const coves = createCoves(occupied);
       const enemyShips = createEnemyShips(occupied);
       
       islands.forEach(island => {
@@ -588,6 +645,8 @@ export const useGameStore = create<GameState>()(
         artifacts,
         islands,
         selectedIsland: null,
+        coves,
+        selectedCove: null,
         enemyShips,
         combatState: {
           isInCombat: false,

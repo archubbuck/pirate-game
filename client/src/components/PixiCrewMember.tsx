@@ -13,7 +13,7 @@ export class PixiCrewMembers {
 
   private createCrewMember(crew: CrewMember) {
     const crewContainer = new PIXI.Container();
-    crewContainer.name = crew.state;
+    crewContainer.label = crew.state;
     
     const graphics = new PIXI.Graphics();
     
@@ -99,7 +99,7 @@ export class PixiCrewMembers {
         const worldY = crew.position.y * this.tileSize + this.tileSize / 2;
         existing.position.set(worldX, worldY);
         
-        if (crew.state !== existing.name) {
+        if (crew.state !== existing.label) {
           existing.destroy();
           this.crewGraphics.delete(crew.id);
           this.createCrewMember(crew);
