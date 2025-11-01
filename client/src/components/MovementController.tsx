@@ -195,7 +195,7 @@ export function MovementController() {
         setTargetPosition(null);
       }
     }
-  }, [targetPosition, player.position, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
+  }, [targetPosition, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
   
   useEffect(() => {
     let animationFrameId: number;
