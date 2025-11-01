@@ -10,8 +10,6 @@ export class PixiTerrain {
   private lastExploredState: Map<string, boolean> = new Map();
   private tileColors: Map<string, number> = new Map();
   private waterShades = [0x1e7ba5, 0x2685ad, 0x2a8fb5, 0x1f7ca8, 0x22809d, 0x2588b0, 0x1a719f];
-  private viewportMargin: number = 2;
-  private destroyMargin: number = 10;
   private hexWidth: number;
   private hexHeight: number;
   private lastPlayerPos: { x: number; y: number } | null = null;

@@ -589,7 +589,7 @@ export const useGameStore = create<GameState>()(
     isArchivistOpen: false,
     activePowerUps: [],
     mapUnlocks: createMapUnlocks(),
-    visionRadius: 5,
+    visionRadius: 10,
     
     shipUpgrades: createInitialShipUpgrades(),
     currency: 0,
@@ -1035,8 +1035,8 @@ export const useGameStore = create<GameState>()(
       }));
       
       if (type === "vision") {
-        set({ visionRadius: 8 });
-        get().revealTilesAround(get().player.position, 8);
+        set({ visionRadius: 10 });
+        get().revealTilesAround(get().player.position, 10);
       }
       
       if (expiresAt) {
@@ -1046,7 +1046,7 @@ export const useGameStore = create<GameState>()(
           }));
           
           if (type === "vision") {
-            set({ visionRadius: 5 });
+            set({ visionRadius: 10 });
           }
           
           console.log(`${type} power-up expired`);

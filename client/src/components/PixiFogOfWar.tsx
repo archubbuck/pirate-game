@@ -9,7 +9,7 @@ export class PixiFogOfWar {
   private hexSize: number = 24;
   private hexWidth: number;
   private hexHeight: number;
-  private visionRadius: number = 6;
+  private visionRadius: number = 10;
 
   constructor(app: PIXI.Application, gameContainer: PIXI.Container) {
     this.app = app;
