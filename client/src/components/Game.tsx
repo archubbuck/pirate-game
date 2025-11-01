@@ -95,7 +95,7 @@ export function Game() {
 
         app.ticker.add(() => {
           camera.update();
-          terrain.update();
+          terrain.update(camera);
           islands.update(camera);
           player.update();
           collectibles.update(camera);
