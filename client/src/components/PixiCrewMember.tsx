@@ -23,6 +23,14 @@ export class PixiCrewMembers {
     return { posX, posY };
   }
 
+  private getHexDistance(x1: number, y1: number, x2: number, y2: number): number {
+    const q1 = x1 - Math.floor(y1 / 2);
+    const r1 = y1;
+    const q2 = x2 - Math.floor(y2 / 2);
+    const r2 = y2;
+    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
+  }
+
   private createCrewMember(crew: CrewMember) {
     const crewContainer = new PIXI.Container();
     crewContainer.label = crew.state;
@@ -88,22 +96,22 @@ export class PixiCrewMembers {
     this.crewGraphics.set(crew.id, crewContainer);
   }
 
-  private isInViewport(crew: CrewMember, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const { posX: worldX, posY: worldY } = this.getHexPosition(crew.position.x, crew.position.y);
-    
-    return worldX >= bounds.minX && worldX <= bounds.maxX &&
-           worldY >= bounds.minY && worldY <= bounds.maxY;
-  }
-
   public update(camera?: PixiCamera) {
     const crewMembers = useGameStore.getState().crewMembers;
-    const bounds = camera?.getViewportBounds();
+    const player = useGameStore.getState().player;
+    const viewRange = 10;
 
     const deployedCrew = crewMembers.filter(crew => crew.state !== "idle");
     
-    const visibleCrew = bounds
-      ? deployedCrew.filter(crew => this.isInViewport(crew, bounds))
-      : deployedCrew;
+    const visibleCrew = deployedCrew.filter(crew => {
+      const distance = this.getHexDistance(
+        crew.position.x,
+        crew.position.y,
+        player.position.x,
+        player.position.y
+      );
+      return distance <= viewRange;
+    });
 
     const currentIds = new Set(deployedCrew.map(c => c.id));
     
