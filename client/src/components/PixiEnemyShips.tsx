@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { useGameStore, type EnemyShip } from "@/lib/stores/useGameStore";
+import type { PixiCamera } from "./PixiCamera";
 
 export class PixiEnemyShips {
   private container: PIXI.Container;
@@ -73,8 +74,21 @@ export class PixiEnemyShips {
     this.shipGraphics.set(ship.id, shipContainer);
   }
 
-  public update() {
+  private isInViewport(ship: EnemyShip, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
+    const worldX = ship.visualPosition.x * this.tileSize;
+    const worldY = ship.visualPosition.y * this.tileSize;
+    
+    return worldX >= bounds.minX && worldX <= bounds.maxX &&
+           worldY >= bounds.minY && worldY <= bounds.maxY;
+  }
+
+  public update(camera?: PixiCamera) {
     const enemyShips = useGameStore.getState().enemyShips;
+    const bounds = camera?.getViewportBounds();
+
+    const visibleShips = bounds 
+      ? enemyShips.filter(ship => this.isInViewport(ship, bounds))
+      : enemyShips;
 
     const currentIds = new Set(enemyShips.map(s => s.id));
     
@@ -85,7 +99,13 @@ export class PixiEnemyShips {
       }
     });
 
-    enemyShips.forEach(ship => {
+    const visibleIds = new Set(visibleShips.map(s => s.id));
+    
+    this.shipGraphics.forEach((graphics, id) => {
+      graphics.visible = visibleIds.has(id);
+    });
+
+    visibleShips.forEach(ship => {
       const existing = this.shipGraphics.get(ship.id);
       
       if (!existing) {
@@ -95,6 +115,7 @@ export class PixiEnemyShips {
         const worldY = ship.visualPosition.y * this.tileSize;
         existing.position.set(worldX, worldY);
         existing.rotation = ship.rotation;
+        existing.visible = true;
         
         const healthBarFg = existing.children[2] as PIXI.Graphics;
         if (healthBarFg) {

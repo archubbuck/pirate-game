@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { useGameStore, type Island } from "@/lib/stores/useGameStore";
+import type { PixiCamera } from "./PixiCamera";
 
 export class PixiIslands {
   private container: PIXI.Container;
@@ -70,21 +71,43 @@ export class PixiIslands {
     this.islandGraphics.set(island.id, islandContainer);
   }
 
-  public update() {
-    const islands = useGameStore.getState().islands;
+  private isInViewport(island: Island, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
+    const minX = Math.min(...island.positions.map(p => p.x));
+    const minY = Math.min(...island.positions.map(p => p.y));
+    const maxX = Math.max(...island.positions.map(p => p.x));
+    const maxY = Math.max(...island.positions.map(p => p.y));
+    
+    const worldMinX = minX * this.tileSize;
+    const worldMaxX = (maxX + 1) * this.tileSize;
+    const worldMinY = minY * this.tileSize;
+    const worldMaxY = (maxY + 1) * this.tileSize;
+    
+    return !(worldMaxX < bounds.minX || worldMinX > bounds.maxX || 
+             worldMaxY < bounds.minY || worldMinY > bounds.maxY);
+  }
 
-    const currentIds = new Set(islands.map(i => i.id));
+  public update(camera?: PixiCamera) {
+    const islands = useGameStore.getState().islands;
+    const bounds = camera?.getViewportBounds();
+
+    const visibleIslands = bounds 
+      ? islands.filter(island => this.isInViewport(island, bounds))
+      : islands;
+
+    const currentIds = new Set(visibleIslands.map(i => i.id));
     
     this.islandGraphics.forEach((graphics, id) => {
       if (!currentIds.has(id)) {
-        graphics.destroy();
-        this.islandGraphics.delete(id);
+        graphics.visible = false;
       }
     });
 
-    islands.forEach(island => {
-      if (!this.islandGraphics.has(island.id)) {
+    visibleIslands.forEach(island => {
+      const existing = this.islandGraphics.get(island.id);
+      if (!existing) {
         this.createIsland(island);
+      } else {
+        existing.visible = true;
       }
     });
   }

@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { useGameStore, type Artifact } from "@/lib/stores/useGameStore";
+import type { PixiCamera } from "./PixiCamera";
 
 export class PixiArtifacts {
   private container: PIXI.Container;
@@ -35,17 +36,25 @@ export class PixiArtifacts {
     this.artifactGraphics.set(artifact.id, artifactContainer);
   }
 
-  public update() {
+  private isInViewport(artifact: Artifact, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
+    const worldX = artifact.position.x * this.tileSize;
+    const worldY = artifact.position.y * this.tileSize;
+    
+    return worldX >= bounds.minX && worldX <= bounds.maxX &&
+           worldY >= bounds.minY && worldY <= bounds.maxY;
+  }
+
+  public update(camera?: PixiCamera) {
     const artifacts = useGameStore.getState().artifacts;
-    const tiles = useGameStore.getState().tiles;
+    const bounds = camera?.getViewportBounds();
 
-    const visibleArtifacts = artifacts.filter(artifact => {
-      if (artifact.isCollected) return false;
-      const tile = tiles[artifact.position.y]?.[artifact.position.x];
-      return tile && (tile.isExplored || artifact.clueRevealed);
-    });
+    const uncollectedArtifacts = artifacts.filter(artifact => !artifact.isCollected);
+    
+    const visibleArtifacts = bounds
+      ? uncollectedArtifacts.filter(artifact => this.isInViewport(artifact, bounds))
+      : uncollectedArtifacts;
 
-    const currentIds = new Set(visibleArtifacts.map(a => a.id));
+    const currentIds = new Set(uncollectedArtifacts.map(a => a.id));
     
     this.artifactGraphics.forEach((graphics, id) => {
       if (!currentIds.has(id)) {
@@ -54,9 +63,18 @@ export class PixiArtifacts {
       }
     });
 
+    const visibleIds = new Set(visibleArtifacts.map(a => a.id));
+    
+    this.artifactGraphics.forEach((graphics, id) => {
+      graphics.visible = visibleIds.has(id);
+    });
+
     visibleArtifacts.forEach(artifact => {
-      if (!this.artifactGraphics.has(artifact.id)) {
+      const existing = this.artifactGraphics.get(artifact.id);
+      if (!existing) {
         this.createArtifact(artifact);
+      } else {
+        existing.visible = true;
       }
     });
   }

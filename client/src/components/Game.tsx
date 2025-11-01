@@ -91,12 +91,12 @@ export function Game() {
         app.ticker.add(() => {
           camera.update();
           terrain.update();
-          islands.update();
+          islands.update(camera);
           player.update();
-          collectibles.update();
-          artifacts.update();
-          enemyShips.update();
-          crewMembers.update();
+          collectibles.update(camera);
+          artifacts.update(camera);
+          enemyShips.update(camera);
+          crewMembers.update(camera);
         });
 
         const handleResize = () => {

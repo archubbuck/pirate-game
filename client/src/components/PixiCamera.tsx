@@ -223,6 +223,26 @@ export class PixiCamera {
     this.clampCameraToBounds();
   }
 
+  public getViewportBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
+    const screenWidth = this.app.screen.width;
+    const screenHeight = this.app.screen.height;
+    
+    const visibleWidth = screenWidth / this.zoom;
+    const visibleHeight = screenHeight / this.zoom;
+    
+    const centerX = this.container.pivot.x;
+    const centerY = this.container.pivot.y;
+    
+    const padding = 100;
+    
+    return {
+      minX: centerX - visibleWidth / 2 - padding,
+      maxX: centerX + visibleWidth / 2 + padding,
+      minY: centerY - visibleHeight / 2 - padding,
+      maxY: centerY + visibleHeight / 2 + padding,
+    };
+  }
+
   public onResize() {
     this.container.x = this.app.screen.width / 2;
     this.container.y = this.app.screen.height / 2;

@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { useGameStore, type CrewMember } from "@/lib/stores/useGameStore";
+import type { PixiCamera } from "./PixiCamera";
 
 export class PixiCrewMembers {
   private container: PIXI.Container;
@@ -77,10 +78,25 @@ export class PixiCrewMembers {
     this.crewGraphics.set(crew.id, crewContainer);
   }
 
-  public update() {
-    const crewMembers = useGameStore.getState().crewMembers;
+  private isInViewport(crew: CrewMember, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
+    const worldX = crew.position.x * this.tileSize;
+    const worldY = crew.position.y * this.tileSize;
+    
+    return worldX >= bounds.minX && worldX <= bounds.maxX &&
+           worldY >= bounds.minY && worldY <= bounds.maxY;
+  }
 
-    const currentIds = new Set(crewMembers.map(c => c.id));
+  public update(camera?: PixiCamera) {
+    const crewMembers = useGameStore.getState().crewMembers;
+    const bounds = camera?.getViewportBounds();
+
+    const deployedCrew = crewMembers.filter(crew => crew.state !== "idle");
+    
+    const visibleCrew = bounds
+      ? deployedCrew.filter(crew => this.isInViewport(crew, bounds))
+      : deployedCrew;
+
+    const currentIds = new Set(deployedCrew.map(c => c.id));
     
     this.crewGraphics.forEach((graphics, id) => {
       if (!currentIds.has(id)) {
@@ -89,7 +105,13 @@ export class PixiCrewMembers {
       }
     });
 
-    crewMembers.forEach(crew => {
+    const visibleIds = new Set(visibleCrew.map(c => c.id));
+    
+    this.crewGraphics.forEach((graphics, id) => {
+      graphics.visible = visibleIds.has(id);
+    });
+
+    visibleCrew.forEach(crew => {
       const existing = this.crewGraphics.get(crew.id);
       
       if (!existing) {
@@ -98,6 +120,7 @@ export class PixiCrewMembers {
         const worldX = crew.position.x * this.tileSize + this.tileSize / 2;
         const worldY = crew.position.y * this.tileSize + this.tileSize / 2;
         existing.position.set(worldX, worldY);
+        existing.visible = true;
         
         if (crew.state !== existing.label) {
           existing.destroy();

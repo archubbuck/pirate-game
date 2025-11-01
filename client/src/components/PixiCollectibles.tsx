@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { useGameStore, type Collectible } from "@/lib/stores/useGameStore";
+import type { PixiCamera } from "./PixiCamera";
 
 export class PixiCollectibles {
   private container: PIXI.Container;
@@ -36,16 +37,23 @@ export class PixiCollectibles {
     this.collectibleGraphics.set(collectible.id, collectibleContainer);
   }
 
-  public update() {
+  private isInViewport(collectible: Collectible, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
+    const worldX = collectible.position.x * this.tileSize;
+    const worldY = collectible.position.y * this.tileSize;
+    
+    return worldX >= bounds.minX && worldX <= bounds.maxX &&
+           worldY >= bounds.minY && worldY <= bounds.maxY;
+  }
+
+  public update(camera?: PixiCamera) {
     const collectibles = useGameStore.getState().collectibles;
-    const tiles = useGameStore.getState().tiles;
+    const bounds = camera?.getViewportBounds();
 
-    const visibleCollectibles = collectibles.filter(collectible => {
-      const tile = tiles[collectible.position.y]?.[collectible.position.x];
-      return tile && tile.isExplored;
-    });
+    const visibleCollectibles = bounds
+      ? collectibles.filter(collectible => this.isInViewport(collectible, bounds))
+      : collectibles;
 
-    const currentIds = new Set(visibleCollectibles.map(c => c.id));
+    const currentIds = new Set(collectibles.map(c => c.id));
     
     this.collectibleGraphics.forEach((graphics, id) => {
       if (!currentIds.has(id)) {
@@ -54,9 +62,18 @@ export class PixiCollectibles {
       }
     });
 
+    const visibleIds = new Set(visibleCollectibles.map(c => c.id));
+    
+    this.collectibleGraphics.forEach((graphics, id) => {
+      graphics.visible = visibleIds.has(id);
+    });
+
     visibleCollectibles.forEach(collectible => {
-      if (!this.collectibleGraphics.has(collectible.id)) {
+      const existing = this.collectibleGraphics.get(collectible.id);
+      if (!existing) {
         this.createCollectible(collectible);
+      } else {
+        existing.visible = true;
       }
     });
   }
