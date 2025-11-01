@@ -274,8 +274,7 @@ export function MovementController() {
             );
             
             if (collectible) {
-              const estimatedTime = getEstimatedCollectionTime(collectible.collectionTime);
-              startCollection(collectible.id, estimatedTime);
+              startCollection(collectible.id);
             }
           }
         } else {

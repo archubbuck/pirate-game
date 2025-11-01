@@ -235,7 +235,7 @@ interface GameState {
   updateCameraTransform: (transform: { pivotX: number; pivotY: number; scale: number; containerX: number; containerY: number }) => void;
   
   startTravel: (duration: number) => void;
-  startCollection: (itemId: string, duration: number) => void;
+  startCollection: (itemId: string) => void;
   cancelCollection: () => void;
   completeCollection: () => void;
   
@@ -246,7 +246,7 @@ interface GameState {
   
   getDistance: (from: Position, to: Position) => number;
   getTravelTime: (distance: number) => number;
-  getEstimatedCollectionTime: (actualTime: number) => number;
+  getEstimatedCollectionTime: (itemId: string) => number;
   getCargoCount: () => number;
   getMaxCargo: () => number;
   getCurrency: () => Record<string, number>;
@@ -277,6 +277,26 @@ const createInitialTiles = (): Tile[][] => {
   return tiles;
 };
 
+// Collection timing constants (in milliseconds)
+const COLLECTION_BASE_TIMES = {
+  timber: 4000,      // Most common, quickest (4s)
+  alloy: 6000,       // Heavy materials take longer (6s)
+  circuit: 5000,     // Delicate electronics (5s)
+  biofiber: 4500,    // Organic materials (4.5s)
+};
+
+const RICHNESS_MULTIPLIERS = [1, 1.5, 2]; // Indexed by (richness - 1)
+
+// Calculate deterministic collection time based on resource type and richness
+function calculateCollectionTime(
+  type: "timber" | "alloy" | "circuit" | "biofiber",
+  richness: number
+): number {
+  const baseTime = COLLECTION_BASE_TIMES[type];
+  const multiplier = RICHNESS_MULTIPLIERS[richness - 1] || 1;
+  return baseTime * multiplier;
+}
+
 const createInitialPlayer = (): Player => ({
   position: { x: 20, y: 20 },
   visualPosition: { x: 20, y: 20 },
@@ -306,12 +326,13 @@ const createCollectiblesAndArtifacts = (): { collectibles: Collectible[], artifa
     occupied.add(posKey);
     
     const richness = Math.floor(Math.random() * 3) + 1;
-    const collectionTime = richness * 3000 + Math.random() * 2000;
+    const type = types[Math.floor(Math.random() * types.length)];
+    const collectionTime = calculateCollectionTime(type, richness);
     
     collectibles.push({
       id: `collectible-${i}`,
       position,
-      type: types[Math.floor(Math.random() * types.length)],
+      type,
       richness,
       collectionTime,
     });
@@ -1134,13 +1155,23 @@ export const useGameStore = create<GameState>()(
       return (distance * baseSpeed) / engineLevel * speedBoost;
     },
     
-    getEstimatedCollectionTime: (actualTime: number) => {
+    getEstimatedCollectionTime: (itemId: string) => {
+      const collectible = get().collectibles.find(c => c.id === itemId);
+      if (!collectible) return 0;
+      
+      const salvageRigLevel = get().shipUpgrades.salvageRig;
       const scannerLevel = get().shipUpgrades.scanner;
+      
+      // Calculate actual collection time with salvage rig bonus
+      const actualTime = collectible.collectionTime / salvageRigLevel;
+      
+      // Apply scanner accuracy variance (60% at level 1, 100% at level 5)
       const minAccuracy = 0.6;
       const maxAccuracy = 1.0;
       const accuracy = minAccuracy + ((maxAccuracy - minAccuracy) * (scannerLevel - 1) / 4);
       const variance = 1 - accuracy;
       const randomFactor = 1 - variance + (Math.random() * variance * 2);
+      
       return actualTime * randomFactor;
     },
     
@@ -1160,7 +1191,7 @@ export const useGameStore = create<GameState>()(
       });
     },
     
-    startCollection: (itemId: string, duration: number) => {
+    startCollection: (itemId: string) => {
       const cargoCount = get().getCargoCount();
       const maxCargo = get().getMaxCargo();
       
@@ -1169,8 +1200,11 @@ export const useGameStore = create<GameState>()(
         return;
       }
       
+      const collectible = get().collectibles.find(c => c.id === itemId);
+      if (!collectible) return;
+      
       const salvageRigLevel = get().shipUpgrades.salvageRig;
-      const actualDuration = duration / salvageRigLevel;
+      const actualDuration = collectible.collectionTime / salvageRigLevel;
       
       set({
         isCollecting: true,
@@ -1179,7 +1213,7 @@ export const useGameStore = create<GameState>()(
         collectingItemId: itemId,
       });
       
-      console.log(`Starting collection of ${itemId}, estimated ${(actualDuration / 1000).toFixed(1)}s`);
+      console.log(`Starting collection of ${collectible.type} (richness ${collectible.richness}), actual time: ${(actualDuration / 1000).toFixed(1)}s`);
     },
     
     cancelCollection: () => {
@@ -1385,7 +1419,7 @@ export const useGameStore = create<GameState>()(
         });
         
         console.log(`Auto-collecting ${nearest.type} at distance ${Math.abs(nearest.position.x - playerPos.x) + Math.abs(nearest.position.y - playerPos.y)}`);
-        get().startCollection(nearest.id, nearest.collectionTime);
+        get().startCollection(nearest.id);
       }
     },
   };
