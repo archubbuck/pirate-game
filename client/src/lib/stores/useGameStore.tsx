@@ -1223,7 +1223,7 @@ export const useGameStore = create<GameState>()(
     },
     
     setZoomLevel: (level: number) => {
-      set({ zoomLevel: Math.max(50, Math.min(600, level)) });
+      set({ zoomLevel: Math.max(50, Math.min(150, level)) });
     },
     
     deployCrewMember: (position: Position, collectibleId: string) => {

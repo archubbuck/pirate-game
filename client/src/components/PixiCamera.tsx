@@ -10,7 +10,7 @@ export class PixiCamera {
   private zoom: number = 1;
   private targetZoom: number = 1;
   private minZoom: number = 0.5;
-  private maxZoom: number = 6;
+  private maxZoom: number = 1.5;
   private touchDistance: number = 0;
   private tileSize: number = 40;
 
@@ -224,22 +224,22 @@ export class PixiCamera {
   }
 
   public getViewportBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
-    const player = useGameStore.getState().player;
-    const centerTileX = player.position.x;
-    const centerTileY = player.position.y;
+    const screenWidth = this.app.screen.width;
+    const screenHeight = this.app.screen.height;
     
-    const renderRadius = 12.5;
+    const visibleWidth = screenWidth / this.zoom;
+    const visibleHeight = screenHeight / this.zoom;
     
-    const minTileX = centerTileX - renderRadius;
-    const maxTileX = centerTileX + renderRadius;
-    const minTileY = centerTileY - renderRadius;
-    const maxTileY = centerTileY + renderRadius;
+    const centerX = this.container.pivot.x;
+    const centerY = this.container.pivot.y;
+    
+    const padding = Math.max(visibleWidth, visibleHeight) * 0.5;
     
     return {
-      minX: minTileX * this.tileSize,
-      maxX: maxTileX * this.tileSize,
-      minY: minTileY * this.tileSize,
-      maxY: maxTileY * this.tileSize,
+      minX: centerX - visibleWidth / 2 - padding,
+      maxX: centerX + visibleWidth / 2 + padding,
+      minY: centerY - visibleHeight / 2 - padding,
+      maxY: centerY + visibleHeight / 2 + padding,
     };
   }
 

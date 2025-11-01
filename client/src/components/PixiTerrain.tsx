@@ -92,13 +92,8 @@ export class PixiTerrain {
     }
 
     borderGraphic.clear();
-    if (tile.isHighlighted) {
-      borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-      borderGraphic.stroke({ color: 0xffcc00, width: 2.5, alpha: 1 });
-    } else {
-      borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-      borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: 0.7 });
-    }
+    borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
+    borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: 0.7 });
   }
 
   public update() {
@@ -111,7 +106,7 @@ export class PixiTerrain {
         const key = `${x}-${y}`;
         const wasExplored = this.lastExploredState.get(key);
 
-        if (tile.isExplored !== wasExplored || tile.isHighlighted) {
+        if (tile.isExplored !== wasExplored) {
           this.renderTile(x, y, tile);
           this.lastExploredState.set(key, tile.isExplored);
         }
