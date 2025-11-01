@@ -224,22 +224,22 @@ export class PixiCamera {
   }
 
   public getViewportBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
-    const screenWidth = this.app.screen.width;
-    const screenHeight = this.app.screen.height;
+    const player = useGameStore.getState().player;
+    const centerTileX = player.position.x;
+    const centerTileY = player.position.y;
     
-    const visibleWidth = screenWidth / this.zoom;
-    const visibleHeight = screenHeight / this.zoom;
+    const loadRadius = 7.5;
     
-    const centerX = this.container.pivot.x;
-    const centerY = this.container.pivot.y;
-    
-    const padding = Math.max(visibleWidth, visibleHeight) * 0.5;
+    const minTileX = centerTileX - loadRadius;
+    const maxTileX = centerTileX + loadRadius;
+    const minTileY = centerTileY - loadRadius;
+    const maxTileY = centerTileY + loadRadius;
     
     return {
-      minX: centerX - visibleWidth / 2 - padding,
-      maxX: centerX + visibleWidth / 2 + padding,
-      minY: centerY - visibleHeight / 2 - padding,
-      maxY: centerY + visibleHeight / 2 + padding,
+      minX: minTileX * this.tileSize,
+      maxX: maxTileX * this.tileSize,
+      minY: minTileY * this.tileSize,
+      maxY: maxTileY * this.tileSize,
     };
   }
 

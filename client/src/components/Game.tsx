@@ -19,6 +19,7 @@ import { PixiIslands } from "./PixiIslands";
 import { PixiEnemyShips } from "./PixiEnemyShips";
 import { PixiCrewMembers } from "./PixiCrewMember";
 import { PixiCamera } from "./PixiCamera";
+import { PixiFogOfWar } from "./PixiFogOfWar";
 import { EnemyAIController } from "./EnemyAIController";
 import { CrewController } from "./CrewController";
 import { CombatUI } from "./CombatUI";
@@ -35,6 +36,7 @@ export function Game() {
   const artifactsRef = useRef<any>(null);
   const enemyShipsRef = useRef<any>(null);
   const crewMembersRef = useRef<any>(null);
+  const fogOfWarRef = useRef<any>(null);
   const resizeHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -87,6 +89,9 @@ export function Game() {
         
         const crewMembers = new PixiCrewMembers(gameContainer);
         crewMembersRef.current = crewMembers;
+        
+        const fogOfWar = new PixiFogOfWar(app, gameContainer);
+        fogOfWarRef.current = fogOfWar;
 
         app.ticker.add(() => {
           camera.update();
@@ -97,6 +102,7 @@ export function Game() {
           artifacts.update(camera);
           enemyShips.update(camera);
           crewMembers.update(camera);
+          fogOfWar.update();
         });
 
         const handleResize = () => {
@@ -159,6 +165,11 @@ export function Game() {
       if (crewMembersRef.current) {
         crewMembersRef.current.destroy();
         crewMembersRef.current = null;
+      }
+      
+      if (fogOfWarRef.current) {
+        fogOfWarRef.current.destroy();
+        fogOfWarRef.current = null;
       }
       
       if (appRef.current) {
