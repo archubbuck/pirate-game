@@ -79,13 +79,12 @@ export class PixiTerrain {
     const { tile: tileGraphic, border: borderGraphic } = graphics;
 
     const baseColor = this.tileColors.get(key) || 0x0a4d68;
-    const opacity = tile.isExplored ? 1 : 0.1;
 
     tileGraphic.clear();
     tileGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-    tileGraphic.fill({ color: baseColor, alpha: opacity });
+    tileGraphic.fill({ color: baseColor, alpha: 1 });
     
-    if (tile.isExplored && Math.random() > 0.85) {
+    if (Math.random() > 0.85) {
       const waveX = Math.random() * (this.tileSize - 2);
       const waveY = Math.random() * (this.tileSize - 2);
       tileGraphic.circle(waveX, waveY, 1);
@@ -93,12 +92,12 @@ export class PixiTerrain {
     }
 
     borderGraphic.clear();
-    if (tile.isHighlighted && tile.isExplored) {
+    if (tile.isHighlighted) {
       borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
       borderGraphic.stroke({ color: 0xffcc00, width: 2.5, alpha: 1 });
     } else {
       borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-      borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: tile.isExplored ? 0.7 : 0.05 });
+      borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: 0.7 });
     }
   }
 
