@@ -59,13 +59,6 @@ export class PixiEnemyShips {
     shipContainer.addChild(healthBarBg);
     shipContainer.addChild(healthBarFg);
     
-    shipContainer.eventMode = 'static';
-    shipContainer.cursor = 'crosshair';
-    shipContainer.on('pointerdown', () => {
-      console.log('Enemy ship clicked:', ship.id);
-      useGameStore.getState().startCombat(ship.id);
-    });
-    
     const worldX = ship.visualPosition.x * this.tileSize;
     const worldY = ship.visualPosition.y * this.tileSize;
     shipContainer.position.set(worldX, worldY);

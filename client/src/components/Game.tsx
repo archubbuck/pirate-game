@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as PIXI from "pixi.js";
 import { MovementController } from "./MovementController";
+import { GameLoop } from "./GameLoop";
 import { HUD } from "./HUD";
 import { Inventory } from "./Inventory";
 import { Shop } from "./Shop";
@@ -186,6 +187,7 @@ export function Game() {
       <canvas ref={canvasRef} style={{ display: "block" }} />
       
       <MovementController />
+      <GameLoop />
       <EnemyAIController />
       <CrewController />
       <HUD />

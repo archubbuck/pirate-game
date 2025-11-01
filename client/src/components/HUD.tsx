@@ -28,8 +28,6 @@ export function HUD() {
   const artifacts = useGameStore((state) => state.artifacts);
   const isCameraFollowing = useGameStore((state) => state.isCameraFollowing);
   const toggleCameraFollow = useGameStore((state) => state.toggleCameraFollow);
-  const zoomLevel = useGameStore((state) => state.zoomLevel);
-  const setZoomLevel = useGameStore((state) => state.setZoomLevel);
   const isMuted = useAudio((state) => state.isMuted);
   const toggleMute = useAudio ((state) => state.toggleMute);
   
@@ -184,57 +182,6 @@ export function HUD() {
             >
               ↻
             </button>
-          </div>
-          
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
-            <div className="text-xs text-gray-300 font-mono bg-gray-900/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-gray-700/50 shadow-lg">
-              {zoomLevel}%
-            </div>
-            <div className="relative">
-              <input
-                type="range"
-                min="50"
-                max="600"
-                step="5"
-                value={zoomLevel}
-                onChange={(e) => setZoomLevel(Number(e.target.value))}
-                className="h-48 w-3 appearance-none bg-gray-800/50 rounded-full cursor-pointer
-                  [writing-mode:vertical-lr] direction-rtl
-                  [&::-webkit-slider-thumb]:appearance-none
-                  [&::-webkit-slider-thumb]:w-6
-                  [&::-webkit-slider-thumb]:h-6
-                  [&::-webkit-slider-thumb]:rounded-full
-                  [&::-webkit-slider-thumb]:bg-cyan-500
-                  [&::-webkit-slider-thumb]:border-2
-                  [&::-webkit-slider-thumb]:border-cyan-300
-                  [&::-webkit-slider-thumb]:cursor-pointer
-                  [&::-webkit-slider-thumb]:shadow-lg
-                  [&::-webkit-slider-thumb]:hover:bg-cyan-400
-                  [&::-moz-range-thumb]:w-6
-                  [&::-moz-range-thumb]:h-6
-                  [&::-moz-range-thumb]:rounded-full
-                  [&::-moz-range-thumb]:bg-cyan-500
-                  [&::-moz-range-thumb]:border-2
-                  [&::-moz-range-thumb]:border-cyan-300
-                  [&::-moz-range-thumb]:cursor-pointer
-                  [&::-moz-range-thumb]:shadow-lg
-                  [&::-moz-range-thumb]:hover:bg-cyan-400"
-                title="Zoom Level"
-              />
-              <div className="absolute left-1/2 -translate-x-1/2 top-0 h-full pointer-events-none">
-                {Array.from({ length: Math.floor((600 - 50) / 25) + 1 }, (_, i) => 50 + i * 25).map((mark) => {
-                  const percentage = ((mark - 50) / (600 - 50)) * 100;
-                  return (
-                    <div
-                      key={mark}
-                      className="absolute w-2 h-0.5 bg-gray-400/60 -left-1"
-                      style={{ bottom: `${percentage}%` }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-            <div className="text-xs text-gray-500 font-mono">ZOOM</div>
           </div>
           
           <div className="absolute bottom-2 right-2 flex gap-1.5">

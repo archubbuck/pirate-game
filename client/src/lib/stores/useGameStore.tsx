@@ -205,6 +205,8 @@ interface GameState {
   startCombat: (enemyId: string) => void;
   updateCombatProgress: (progress: number) => void;
   completeCombat: () => void;
+  checkAutoAttack: () => void;
+  checkAutoCollect: () => void;
   
   toggleInventory: () => void;
   toggleShop: () => void;
@@ -879,24 +881,35 @@ export const useGameStore = create<GameState>()(
     },
     
     completeCombat: () => {
-      const { combatState, enemyShips } = get();
+      const { combatState, enemyShips, collectibles } = get();
       if (!combatState.isInCombat || !combatState.enemyId) return;
       
       const enemy = enemyShips.find(s => s.id === combatState.enemyId);
       if (enemy) {
+        const newCollectibles: Collectible[] = [];
         Object.entries(enemy.loot).forEach(([type, quantity]) => {
           for (let i = 0; i < quantity; i++) {
-            get().collectedItems.push({
-              id: `${type}-${Date.now()}-${i}`,
+            newCollectibles.push({
+              id: `${type}-${enemy.id}-${Date.now()}-${i}`,
               type: type as "timber" | "alloy" | "circuit" | "biofiber",
+              position: { x: enemy.position.x, y: enemy.position.y },
+              richness: 3,
+              collectionTime: 2000,
             });
           }
         });
         
-        get().removeEnemyShip(enemy.id);
-        console.log(`Defeated enemy ship! Collected:`, enemy.loot);
+        set(state => ({
+          collectibles: [...state.collectibles, ...newCollectibles]
+        }));
         
-        useSkillsStore.getState().addXp("combat", 50);
+        get().removeEnemyShip(enemy.id);
+        console.log(`Defeated enemy ship! Dropped loot at (${enemy.position.x}, ${enemy.position.y}):`, enemy.loot);
+        
+        const config = NPC_CONFIGS[enemy.npcType];
+        if (config) {
+          useSkillsStore.getState().addXp("combat", config.stats.experienceReward);
+        }
       }
       
       set({
@@ -1305,6 +1318,56 @@ export const useGameStore = create<GameState>()(
       set(state => ({
         crewMembers: state.crewMembers.filter(c => c.id !== crewId)
       }));
+    },
+    
+    checkAutoAttack: () => {
+      const state = get();
+      
+      if (state.combatState.isInCombat || state.isMoving || state.isCollecting) {
+        return;
+      }
+      
+      const playerPos = state.player.position;
+      const enemiesInRange = state.enemyShips.filter(enemy => {
+        const distance = Math.abs(enemy.position.x - playerPos.x) + Math.abs(enemy.position.y - playerPos.y);
+        return distance <= 3;
+      });
+      
+      if (enemiesInRange.length > 0) {
+        const nearestEnemy = enemiesInRange.reduce((nearest, enemy) => {
+          const nearestDist = Math.abs(nearest.position.x - playerPos.x) + Math.abs(nearest.position.y - playerPos.y);
+          const enemyDist = Math.abs(enemy.position.x - playerPos.x) + Math.abs(enemy.position.y - playerPos.y);
+          return enemyDist < nearestDist ? enemy : nearest;
+        });
+        
+        console.log(`Auto-attacking enemy ${nearestEnemy.id} at distance ${Math.abs(nearestEnemy.position.x - playerPos.x) + Math.abs(nearestEnemy.position.y - playerPos.y)}`);
+        get().startCombat(nearestEnemy.id);
+      }
+    },
+    
+    checkAutoCollect: () => {
+      const state = get();
+      
+      if (state.combatState.isInCombat || state.isCollecting) {
+        return;
+      }
+      
+      const playerPos = state.player.position;
+      const collectiblesInRange = state.collectibles.filter(collectible => {
+        const distance = Math.abs(collectible.position.x - playerPos.x) + Math.abs(collectible.position.y - playerPos.y);
+        return distance <= 2;
+      });
+      
+      if (collectiblesInRange.length > 0 && !state.isMoving) {
+        const nearest = collectiblesInRange.reduce((nearest, collectible) => {
+          const nearestDist = Math.abs(nearest.position.x - playerPos.x) + Math.abs(nearest.position.y - playerPos.y);
+          const collectibleDist = Math.abs(collectible.position.x - playerPos.x) + Math.abs(collectible.position.y - playerPos.y);
+          return collectibleDist < nearestDist ? collectible : nearest;
+        });
+        
+        console.log(`Auto-collecting ${nearest.type} at distance ${Math.abs(nearest.position.x - playerPos.x) + Math.abs(nearest.position.y - playerPos.y)}`);
+        get().startCollection(nearest.id, nearest.collectionTime);
+      }
     },
   };
   })
