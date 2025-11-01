@@ -48,7 +48,7 @@ export class PixiTerrain {
   private drawHexagon(graphics: PIXI.Graphics, centerX: number, centerY: number) {
     const points: number[] = [];
     for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI / 3) * i;
+      const angle = (Math.PI / 3) * i + Math.PI / 6;
       const x = centerX + this.hexSize * Math.cos(angle);
       const y = centerY + this.hexSize * Math.sin(angle);
       points.push(x, y);
@@ -115,7 +115,7 @@ export class PixiTerrain {
 
     borderGraphic.clear();
     this.drawHexagon(borderGraphic, posX, posY);
-    borderGraphic.stroke({ color: 0x1a5a7a, width: 1.5, alpha: 0.5 });
+    borderGraphic.stroke({ color: 0x0d3d4f, width: 1, alpha: 0.6 });
   }
 
   public update(camera?: PixiCamera) {
