@@ -192,7 +192,7 @@ export function MovementController() {
         setTargetPosition(null);
       }
     }
-  }, [targetPosition, player.position, player.visualPosition, isMoving, currentPath, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel, updatePlayerPosition, updateVisualPosition]);
+  }, [targetPosition, player.position, isMoving, currentPath, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
   
   useEffect(() => {
     let animationFrameId: number;
