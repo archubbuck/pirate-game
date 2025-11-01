@@ -135,9 +135,7 @@ export function MovementController() {
   
   const movementProgress = useRef(0);
   const lastTime = useRef(performance.now());
-  const baseSpeed = 3;
-  const hasSpeedBoost = activePowerUps.some(p => p.type === "speed");
-  const moveSpeed = hasSpeedBoost ? baseSpeed * 1.5 : baseSpeed;
+  const TILE_TRANSITION_TIME = 600;
   
   useEffect(() => {
     if (targetPosition && !isMoving && !isCollecting) {
@@ -183,10 +181,10 @@ export function MovementController() {
         return;
       }
       
-      movementProgress.current += delta * moveSpeed;
+      movementProgress.current += delta * 1000;
       
       const nextPosition = state.currentPath[0];
-      const t = Math.min(movementProgress.current, 1);
+      const t = Math.min(movementProgress.current / TILE_TRANSITION_TIME, 1);
       
       const currentX = state.player.position.x;
       const currentY = state.player.position.y;
@@ -205,7 +203,7 @@ export function MovementController() {
         setPlayerRotation(rotation);
       }
       
-      if (movementProgress.current >= 1) {
+      if (movementProgress.current >= TILE_TRANSITION_TIME) {
         updatePlayerPosition(nextPosition);
         
         const remainingPath = state.currentPath.slice(1);
@@ -249,7 +247,7 @@ export function MovementController() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isMoving, isCollecting, collectionStartTime, collectionDuration, currentPath, player, moveSpeed, updateVisualPosition, setPlayerRotation, updatePlayerPosition, setPath, setIsMoving, clearHighlights, collectArtifact, startCollection, getEstimatedCollectionTime, highlightPath, completeCollection, artifacts, collectibles]);
+  }, [isMoving, isCollecting, collectionStartTime, collectionDuration, currentPath, player, updateVisualPosition, setPlayerRotation, updatePlayerPosition, setPath, setIsMoving, clearHighlights, collectArtifact, startCollection, getEstimatedCollectionTime, highlightPath, completeCollection, artifacts, collectibles]);
   
   return null;
 }
