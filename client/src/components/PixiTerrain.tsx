@@ -56,6 +56,14 @@ export class PixiTerrain {
     graphics.poly(points);
   }
 
+  private getHexDistance(x1: number, y1: number, x2: number, y2: number): number {
+    const q1 = x1 - Math.floor(y1 / 2);
+    const r1 = y1;
+    const q2 = x2 - Math.floor(y2 / 2);
+    const r2 = y2;
+    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
+  }
+
   private createTile(x: number, y: number, tile: any) {
     const key = `${x}-${y}`;
     
@@ -122,28 +130,34 @@ export class PixiTerrain {
     const tiles = useGameStore.getState().tiles;
     const gridSize = useGameStore.getState().gridSize;
     const player = useGameStore.getState().player;
+    const zoomLevel = useGameStore.getState().zoomLevel / 100;
     
     if (!camera) {
       return;
     }
 
-    const bounds = camera.getViewportBounds();
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 720;
+    const maxDimension = Math.max(screenWidth, screenHeight);
+    const effectiveHexWidth = this.hexWidth * zoomLevel;
+    const hexViewRadius = Math.ceil((maxDimension / effectiveHexWidth) * 0.8) + 3;
+    const hexDestroyRadius = hexViewRadius + 6;
     
-    const minTileX = Math.max(0, Math.floor(bounds.minX / this.hexWidth) - this.viewportMargin);
-    const maxTileX = Math.min(gridSize - 1, Math.ceil(bounds.maxX / this.hexWidth) + this.viewportMargin);
-    const minTileY = Math.max(0, Math.floor(bounds.minY / (this.hexHeight * 0.75)) - this.viewportMargin);
-    const maxTileY = Math.min(gridSize - 1, Math.ceil(bounds.maxY / (this.hexHeight * 0.75)) + this.viewportMargin);
-
-    const destroyMinTileX = Math.max(0, Math.floor(bounds.minX / this.hexWidth) - this.destroyMargin);
-    const destroyMaxTileX = Math.min(gridSize - 1, Math.ceil(bounds.maxX / this.hexWidth) + this.destroyMargin);
-    const destroyMinTileY = Math.max(0, Math.floor(bounds.minY / (this.hexHeight * 0.75)) - this.destroyMargin);
-    const destroyMaxTileY = Math.min(gridSize - 1, Math.ceil(bounds.maxY / (this.hexHeight * 0.75)) + this.destroyMargin);
+    const centerX = player.position.x;
+    const centerY = player.position.y;
+    
+    const minTileX = Math.max(0, centerX - hexViewRadius);
+    const maxTileX = Math.min(gridSize - 1, centerX + hexViewRadius);
+    const minTileY = Math.max(0, centerY - hexViewRadius);
+    const maxTileY = Math.min(gridSize - 1, centerY + hexViewRadius);
 
     const visibleTileKeys = new Set<string>();
     
     for (let y = minTileY; y <= maxTileY; y++) {
       for (let x = minTileX; x <= maxTileX; x++) {
-        if (y >= 0 && y < gridSize && x >= 0 && x < gridSize) {
+        const distance = this.getHexDistance(x, y, centerX, centerY);
+        
+        if (distance <= hexViewRadius && y >= 0 && y < gridSize && x >= 0 && x < gridSize) {
           const key = `${x}-${y}`;
           visibleTileKeys.add(key);
           
@@ -175,7 +189,8 @@ export class PixiTerrain {
         graphics.tile.visible = false;
         graphics.border.visible = false;
         
-        if (x < destroyMinTileX || x > destroyMaxTileX || y < destroyMinTileY || y > destroyMaxTileY) {
+        const distance = this.getHexDistance(x, y, centerX, centerY);
+        if (distance > hexDestroyRadius) {
           this.destroyTile(key);
         }
       }

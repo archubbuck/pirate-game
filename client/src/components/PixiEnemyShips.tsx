@@ -24,6 +24,14 @@ export class PixiEnemyShips {
     return { posX, posY };
   }
 
+  private getHexDistance(x1: number, y1: number, x2: number, y2: number): number {
+    const q1 = x1 - Math.floor(y1 / 2);
+    const r1 = y1;
+    const q2 = x2 - Math.floor(y2 / 2);
+    const r2 = y2;
+    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
+  }
+
   private createShip(ship: EnemyShip) {
     const shipContainer = new PIXI.Container();
     
@@ -88,11 +96,18 @@ export class PixiEnemyShips {
 
   public update(camera?: PixiCamera) {
     const enemyShips = useGameStore.getState().enemyShips;
-    const bounds = camera?.getViewportBounds();
-
-    const visibleShips = bounds 
-      ? enemyShips.filter(ship => this.isInViewport(ship, bounds))
-      : enemyShips;
+    const player = useGameStore.getState().player;
+    const viewRange = useGameStore.getState().visionRadius || 5;
+    
+    const visibleShips = enemyShips.filter(ship => {
+      const distance = this.getHexDistance(
+        ship.position.x, 
+        ship.position.y, 
+        player.position.x, 
+        player.position.y
+      );
+      return distance <= viewRange;
+    });
 
     const currentIds = new Set(enemyShips.map(s => s.id));
     

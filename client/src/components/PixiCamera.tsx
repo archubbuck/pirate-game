@@ -9,7 +9,7 @@ export class PixiCamera {
   private lastMousePos: { x: number; y: number } = { x: 0, y: 0 };
   private zoom: number = 1;
   private targetZoom: number = 1;
-  private minZoom: number = 0.5;
+  private minZoom: number = 0.75;
   private maxZoom: number = 1.5;
   private touchDistance: number = 0;
   private hexSize: number = 24;
@@ -77,7 +77,8 @@ export class PixiCamera {
     const currentZoom = useGameStore.getState().zoomLevel;
     const zoomAmount = e.deltaY > 0 ? 0.9 : 1.1;
     const newZoom = Math.round(currentZoom * zoomAmount);
-    useGameStore.getState().setZoomLevel(newZoom);
+    const clampedZoom = Math.max(this.minZoom * 100, Math.min(this.maxZoom * 100, newZoom));
+    useGameStore.getState().setZoomLevel(clampedZoom);
   };
 
   private handleTouchStart = (e: TouchEvent) => {
@@ -102,7 +103,8 @@ export class PixiCamera {
         const zoomAmount = distance / this.touchDistance;
         const currentZoom = useGameStore.getState().zoomLevel;
         const newZoom = Math.round(currentZoom * zoomAmount);
-        useGameStore.getState().setZoomLevel(newZoom);
+        const clampedZoom = Math.max(this.minZoom * 100, Math.min(this.maxZoom * 100, newZoom));
+        useGameStore.getState().setZoomLevel(clampedZoom);
         this.touchDistance = distance;
       }
       e.preventDefault();
@@ -219,14 +221,17 @@ export class PixiCamera {
   public update() {
     const dynamicMaxZoom = this.calculateMaxZoom();
     const maxZoomPercent = dynamicMaxZoom * 100;
+    const minZoomPercent = this.minZoom * 100;
     
     let zoomLevel = useGameStore.getState().zoomLevel;
-    if (zoomLevel > maxZoomPercent) {
-      zoomLevel = maxZoomPercent;
-      useGameStore.getState().setZoomLevel(Math.floor(maxZoomPercent));
+    const clampedZoomLevel = Math.max(minZoomPercent, Math.min(maxZoomPercent, zoomLevel));
+    
+    if (zoomLevel !== clampedZoomLevel) {
+      useGameStore.getState().setZoomLevel(Math.floor(clampedZoomLevel));
+      zoomLevel = clampedZoomLevel;
     }
     
-    this.targetZoom = Math.min(zoomLevel / 100, dynamicMaxZoom);
+    this.targetZoom = Math.max(this.minZoom, Math.min(dynamicMaxZoom, zoomLevel / 100));
     
     this.zoom += (this.targetZoom - this.zoom) * 0.1;
     this.container.scale.set(this.zoom);

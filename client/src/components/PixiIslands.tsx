@@ -35,6 +35,14 @@ export class PixiIslands {
     return { posX, posY };
   }
 
+  private getHexDistance(x1: number, y1: number, x2: number, y2: number): number {
+    const q1 = x1 - Math.floor(y1 / 2);
+    const r1 = y1;
+    const q2 = x2 - Math.floor(y2 / 2);
+    const r2 = y2;
+    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
+  }
+
   private createIsland(island: Island) {
     const islandContainer = new PIXI.Container();
     
@@ -116,11 +124,15 @@ export class PixiIslands {
 
   public update(camera?: PixiCamera) {
     const islands = useGameStore.getState().islands;
-    const bounds = camera?.getViewportBounds();
-
-    const visibleIslands = bounds 
-      ? islands.filter(island => this.isInViewport(island.id, bounds))
-      : islands;
+    const player = useGameStore.getState().player;
+    const viewRange = useGameStore.getState().visionRadius || 5;
+    
+    const visibleIslands = islands.filter(island => {
+      const centerX = Math.floor((island.positions.reduce((sum, p) => sum + p.x, 0)) / island.positions.length);
+      const centerY = Math.floor((island.positions.reduce((sum, p) => sum + p.y, 0)) / island.positions.length);
+      const distance = this.getHexDistance(centerX, centerY, player.position.x, player.position.y);
+      return distance <= viewRange;
+    });
 
     const allIslandIds = new Set(islands.map(i => i.id));
     const visibleIds = new Set(visibleIslands.map(i => i.id));
