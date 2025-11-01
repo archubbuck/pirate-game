@@ -181,6 +181,13 @@ interface GameState {
   isCameraFollowing: boolean;
   cameraOffset: { x: number; z: number };
   zoomLevel: number;
+  cameraTransform: {
+    pivotX: number;
+    pivotY: number;
+    scale: number;
+    containerX: number;
+    containerY: number;
+  };
   
   start: () => void;
   restart: () => void;
@@ -225,6 +232,7 @@ interface GameState {
   toggleCameraFollow: () => void;
   setCameraOffset: (offset: { x: number; z: number }) => void;
   setZoomLevel: (level: number) => void;
+  updateCameraTransform: (transform: { pivotX: number; pivotY: number; scale: number; containerX: number; containerY: number }) => void;
   
   startTravel: (duration: number) => void;
   startCollection: (itemId: string, duration: number) => void;
@@ -616,6 +624,13 @@ export const useGameStore = create<GameState>()(
     isCameraFollowing: true,
     cameraOffset: { x: 0, z: 0 },
     zoomLevel: 100,
+    cameraTransform: {
+      pivotX: (GRID_SIZE * 40) / 2,
+      pivotY: (GRID_SIZE * 40) / 2,
+      scale: 1,
+      containerX: 0,
+      containerY: 0,
+    },
     
     start: () => {
       const initialPlayer = createInitialPlayer();
@@ -1239,6 +1254,10 @@ export const useGameStore = create<GameState>()(
     
     setZoomLevel: (level: number) => {
       set({ zoomLevel: Math.max(50, Math.min(600, level)) });
+    },
+    
+    updateCameraTransform: (transform) => {
+      set({ cameraTransform: transform });
     },
     
     deployCrewMember: (position: Position, collectibleId: string) => {

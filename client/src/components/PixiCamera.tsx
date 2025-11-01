@@ -221,6 +221,14 @@ export class PixiCamera {
     }
     
     this.clampCameraToBounds();
+    
+    useGameStore.getState().updateCameraTransform({
+      pivotX: this.container.pivot.x,
+      pivotY: this.container.pivot.y,
+      scale: this.zoom,
+      containerX: this.container.x,
+      containerY: this.container.y,
+    });
   }
 
   public getViewportBounds(): { minX: number; maxX: number; minY: number; maxY: number } {

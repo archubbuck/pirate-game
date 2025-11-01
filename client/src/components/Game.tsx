@@ -24,8 +24,10 @@ import { PixiFogOfWar } from "./PixiFogOfWar";
 import { EnemyAIController } from "./EnemyAIController";
 import { CrewController } from "./CrewController";
 import { CombatUI } from "./CombatUI";
+import { ContextMenu, useContextMenu } from "./ContextMenu";
 
 export function Game() {
+  const { contextMenu, closeContextMenu } = useContextMenu();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
   const containerRef = useRef<PIXI.Container | null>(null);
@@ -200,6 +202,13 @@ export function Game() {
       <IslandInteractionPopup />
       <KeyboardListener />
       <MobileControls />
+      {contextMenu && (
+        <ContextMenu
+          position={contextMenu.position}
+          target={contextMenu.target}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   );
 }
