@@ -12,13 +12,25 @@ export class PixiCamera {
   private minZoom: number = 0.5;
   private maxZoom: number = 1.5;
   private touchDistance: number = 0;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
 
   constructor(app: PIXI.Application, container: PIXI.Container) {
     this.app = app;
     this.container = container;
+    
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
+    
     this.setupEventListeners();
     this.centerCamera();
+  }
+
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
   }
 
   private setupEventListeners() {
@@ -116,8 +128,12 @@ export class PixiCamera {
     this.container.x = this.app.screen.width / 2;
     this.container.y = this.app.screen.height / 2;
     
-    this.container.pivot.x = (gridSize * this.tileSize) / 2;
-    this.container.pivot.y = (gridSize * this.tileSize) / 2;
+    const centerX = gridSize / 2;
+    const centerY = gridSize / 2;
+    const { posX, posY } = this.getHexPosition(centerX, centerY);
+    
+    this.container.pivot.x = posX;
+    this.container.pivot.y = posY;
   }
 
   private getExploredBounds(): { minX: number; maxX: number; minY: number; maxY: number } | null {
@@ -151,8 +167,11 @@ export class PixiCamera {
     const bounds = this.getExploredBounds();
     if (!bounds) return this.maxZoom;
     
-    const exploredWidth = (bounds.maxX - bounds.minX + 1) * this.tileSize;
-    const exploredHeight = (bounds.maxY - bounds.minY + 1) * this.tileSize;
+    const minPos = this.getHexPosition(bounds.minX, bounds.minY);
+    const maxPos = this.getHexPosition(bounds.maxX, bounds.maxY);
+    
+    const exploredWidth = maxPos.posX - minPos.posX + this.hexWidth;
+    const exploredHeight = maxPos.posY - minPos.posY + this.hexHeight;
     
     const screenWidth = this.app.screen.width;
     const screenHeight = this.app.screen.height;
@@ -169,10 +188,13 @@ export class PixiCamera {
     const bounds = this.getExploredBounds();
     if (!bounds) return;
     
-    const exploredMinX = bounds.minX * this.tileSize;
-    const exploredMaxX = (bounds.maxX + 1) * this.tileSize;
-    const exploredMinY = bounds.minY * this.tileSize;
-    const exploredMaxY = (bounds.maxY + 1) * this.tileSize;
+    const minPos = this.getHexPosition(bounds.minX, bounds.minY);
+    const maxPos = this.getHexPosition(bounds.maxX, bounds.maxY);
+    
+    const exploredMinX = minPos.posX;
+    const exploredMaxX = maxPos.posX + this.hexWidth;
+    const exploredMinY = minPos.posY;
+    const exploredMaxY = maxPos.posY + this.hexHeight;
     
     const screenWidth = this.app.screen.width;
     const screenHeight = this.app.screen.height;
@@ -213,8 +235,10 @@ export class PixiCamera {
     const isCameraFollowing = useGameStore.getState().isCameraFollowing;
     
     if (isCameraFollowing) {
-      const targetPivotX = player.visualPosition.x * this.tileSize;
-      const targetPivotY = player.visualPosition.y * this.tileSize;
+      const { posX: targetPivotX, posY: targetPivotY } = this.getHexPosition(
+        player.visualPosition.x,
+        player.visualPosition.y
+      );
       
       this.container.pivot.x += (targetPivotX - this.container.pivot.x) * 0.1;
       this.container.pivot.y += (targetPivotY - this.container.pivot.y) * 0.1;
@@ -243,11 +267,14 @@ export class PixiCamera {
     const minTileY = centerTileY - loadRadius;
     const maxTileY = centerTileY + loadRadius;
     
+    const minPos = this.getHexPosition(minTileX, minTileY);
+    const maxPos = this.getHexPosition(maxTileX, maxTileY);
+    
     return {
-      minX: minTileX * this.tileSize,
-      maxX: maxTileX * this.tileSize,
-      minY: minTileY * this.tileSize,
-      maxY: maxTileY * this.tileSize,
+      minX: minPos.posX,
+      maxX: maxPos.posX,
+      minY: minPos.posY,
+      maxY: maxPos.posY,
     };
   }
 

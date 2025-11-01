@@ -4,12 +4,23 @@ import type { PixiCamera } from "./PixiCamera";
 
 export class PixiCrewMembers {
   private container: PIXI.Container;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
   private crewGraphics: Map<string, PIXI.Container> = new Map();
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
     parent.addChild(this.container);
+    
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
+  }
+
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
   }
 
   private createCrewMember(crew: CrewMember) {
@@ -70,17 +81,15 @@ export class PixiCrewMembers {
       }
     });
     
-    const worldX = crew.position.x * this.tileSize + this.tileSize / 2;
-    const worldY = crew.position.y * this.tileSize + this.tileSize / 2;
-    crewContainer.position.set(worldX, worldY);
+    const { posX, posY } = this.getHexPosition(crew.position.x, crew.position.y);
+    crewContainer.position.set(posX, posY);
     
     this.container.addChild(crewContainer);
     this.crewGraphics.set(crew.id, crewContainer);
   }
 
   private isInViewport(crew: CrewMember, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const worldX = crew.position.x * this.tileSize;
-    const worldY = crew.position.y * this.tileSize;
+    const { posX: worldX, posY: worldY } = this.getHexPosition(crew.position.x, crew.position.y);
     
     return worldX >= bounds.minX && worldX <= bounds.maxX &&
            worldY >= bounds.minY && worldY <= bounds.maxY;
@@ -117,9 +126,8 @@ export class PixiCrewMembers {
       if (!existing) {
         this.createCrewMember(crew);
       } else {
-        const worldX = crew.position.x * this.tileSize + this.tileSize / 2;
-        const worldY = crew.position.y * this.tileSize + this.tileSize / 2;
-        existing.position.set(worldX, worldY);
+        const { posX, posY } = this.getHexPosition(crew.position.x, crew.position.y);
+        existing.position.set(posX, posY);
         existing.visible = true;
         
         if (crew.state !== existing.label) {

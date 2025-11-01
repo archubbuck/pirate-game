@@ -4,12 +4,23 @@ import type { PixiCamera } from "./PixiCamera";
 
 export class PixiArtifacts {
   private container: PIXI.Container;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
   private artifactGraphics: Map<string, PIXI.Container> = new Map();
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
     parent.addChild(this.container);
+    
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
+  }
+
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
   }
 
   private createArtifact(artifact: Artifact) {
@@ -28,8 +39,7 @@ export class PixiArtifacts {
 
     artifactContainer.addChild(graphics);
 
-    const posX = artifact.position.x * this.tileSize + this.tileSize / 2;
-    const posY = artifact.position.y * this.tileSize + this.tileSize / 2;
+    const { posX, posY } = this.getHexPosition(artifact.position.x, artifact.position.y);
     artifactContainer.position.set(posX, posY);
 
     this.container.addChild(artifactContainer);
@@ -37,8 +47,7 @@ export class PixiArtifacts {
   }
 
   private isInViewport(artifact: Artifact, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const worldX = artifact.position.x * this.tileSize;
-    const worldY = artifact.position.y * this.tileSize;
+    const { posX: worldX, posY: worldY } = this.getHexPosition(artifact.position.x, artifact.position.y);
     
     return worldX >= bounds.minX && worldX <= bounds.maxX &&
            worldY >= bounds.minY && worldY <= bounds.maxY;

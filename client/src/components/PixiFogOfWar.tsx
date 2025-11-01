@@ -6,7 +6,9 @@ export class PixiFogOfWar {
   private gameContainer: PIXI.Container;
   private container: PIXI.Container;
   private maskGraphics: PIXI.Graphics;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
   private visionRadius: number = 6;
 
   constructor(app: PIXI.Application, gameContainer: PIXI.Container) {
@@ -15,20 +17,28 @@ export class PixiFogOfWar {
     this.container = new PIXI.Container();
     this.maskGraphics = new PIXI.Graphics();
     
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
+    
     this.container.addChild(this.maskGraphics);
     app.stage.addChild(this.container);
   }
 
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
+  }
+
   public update() {
     const player = useGameStore.getState().player;
-    const playerWorldX = player.visualPosition.x * this.tileSize + this.tileSize / 2;
-    const playerWorldY = player.visualPosition.y * this.tileSize + this.tileSize / 2;
+    const { posX: playerWorldX, posY: playerWorldY } = this.getHexPosition(player.visualPosition.x, player.visualPosition.y);
     
     const worldPoint = new PIXI.Point(playerWorldX, playerWorldY);
     const screenPoint = this.gameContainer.toGlobal(worldPoint);
     
     const zoom = this.gameContainer.scale.x;
-    const visionSize = this.visionRadius * 2 * this.tileSize * zoom;
+    const visionSize = this.visionRadius * 2 * this.hexWidth * zoom;
     
     const screenWidth = this.app.screen.width;
     const screenHeight = this.app.screen.height;

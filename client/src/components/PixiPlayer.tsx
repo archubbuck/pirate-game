@@ -3,17 +3,26 @@ import { useGameStore } from "@/lib/stores/useGameStore";
 import { useSkillsStore } from "@/lib/stores/useSkillsStore";
 
 function getShipTextureForLevel(sailingLevel: number): string {
-  if (sailingLevel >= 60) return "/textures/ships/ship5.png";
-  if (sailingLevel >= 40) return "/textures/ships/ship4.png";
-  if (sailingLevel >= 20) return "/textures/ships/ship3.png";
-  if (sailingLevel >= 10) return "/textures/ships/ship2.png";
+  if (sailingLevel >= 90) return "/textures/ships/ship12.png";
+  if (sailingLevel >= 80) return "/textures/ships/ship11.png";
+  if (sailingLevel >= 70) return "/textures/ships/ship10.png";
+  if (sailingLevel >= 60) return "/textures/ships/ship9.png";
+  if (sailingLevel >= 50) return "/textures/ships/ship8.png";
+  if (sailingLevel >= 40) return "/textures/ships/ship7.png";
+  if (sailingLevel >= 30) return "/textures/ships/ship6.png";
+  if (sailingLevel >= 20) return "/textures/ships/ship5.png";
+  if (sailingLevel >= 15) return "/textures/ships/ship4.png";
+  if (sailingLevel >= 10) return "/textures/ships/ship3.png";
+  if (sailingLevel >= 5) return "/textures/ships/ship2.png";
   return "/textures/ships/ship1.png";
 }
 
 export class PixiPlayer {
   private container: PIXI.Container;
   private shipContainer: PIXI.Container;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
   private shipSprite: PIXI.Sprite | null = null;
   private textures: Map<string, PIXI.Texture> = new Map();
   private currentSailingLevel: number = 1;
@@ -24,6 +33,9 @@ export class PixiPlayer {
     this.shipContainer = new PIXI.Container();
     parent.addChild(this.container);
     this.container.addChild(this.shipContainer);
+
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
 
     this.loadTextures();
   }
@@ -37,6 +49,13 @@ export class PixiPlayer {
       "/textures/ships/ship3.png",
       "/textures/ships/ship4.png",
       "/textures/ships/ship5.png",
+      "/textures/ships/ship6.png",
+      "/textures/ships/ship7.png",
+      "/textures/ships/ship8.png",
+      "/textures/ships/ship9.png",
+      "/textures/ships/ship10.png",
+      "/textures/ships/ship11.png",
+      "/textures/ships/ship12.png",
     ];
 
     try {
@@ -70,7 +89,7 @@ export class PixiPlayer {
     this.shipSprite = new PIXI.Sprite(texture);
     this.shipSprite.anchor.set(0.5, 0.5);
     
-    const scale = 0.15;
+    const scale = 0.08;
     this.shipSprite.scale.set(scale);
     
     this.shipContainer.addChild(this.shipSprite);
@@ -92,12 +111,17 @@ export class PixiPlayer {
     }
   }
 
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
+  }
+
   public update() {
     const player = useGameStore.getState().player;
     const rotation = useGameStore.getState().playerRotation || 0;
     
-    const posX = player.visualPosition.x * this.tileSize + this.tileSize / 2;
-    const posY = player.visualPosition.y * this.tileSize + this.tileSize / 2;
+    const { posX, posY } = this.getHexPosition(player.visualPosition.x, player.visualPosition.y);
     
     this.container.position.set(posX, posY);
     this.shipContainer.rotation = rotation;

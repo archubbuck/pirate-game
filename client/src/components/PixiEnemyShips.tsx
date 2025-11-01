@@ -4,13 +4,24 @@ import type { PixiCamera } from "./PixiCamera";
 
 export class PixiEnemyShips {
   private container: PIXI.Container;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
   private shipGraphics: Map<string, PIXI.Container> = new Map();
   private lastHealthValues: Map<string, number> = new Map();
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
     parent.addChild(this.container);
+    
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
+  }
+
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
   }
 
   private createShip(ship: EnemyShip) {
@@ -59,8 +70,7 @@ export class PixiEnemyShips {
     shipContainer.addChild(healthBarBg);
     shipContainer.addChild(healthBarFg);
     
-    const worldX = ship.visualPosition.x * this.tileSize;
-    const worldY = ship.visualPosition.y * this.tileSize;
+    const { posX: worldX, posY: worldY } = this.getHexPosition(ship.visualPosition.x, ship.visualPosition.y);
     shipContainer.position.set(worldX, worldY);
     shipContainer.rotation = ship.rotation;
     
@@ -70,8 +80,7 @@ export class PixiEnemyShips {
   }
 
   private isInViewport(ship: EnemyShip, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const worldX = ship.visualPosition.x * this.tileSize;
-    const worldY = ship.visualPosition.y * this.tileSize;
+    const { posX: worldX, posY: worldY } = this.getHexPosition(ship.visualPosition.x, ship.visualPosition.y);
     
     return worldX >= bounds.minX && worldX <= bounds.maxX &&
            worldY >= bounds.minY && worldY <= bounds.maxY;
@@ -107,8 +116,7 @@ export class PixiEnemyShips {
       if (!existing) {
         this.createShip(ship);
       } else {
-        const worldX = ship.visualPosition.x * this.tileSize;
-        const worldY = ship.visualPosition.y * this.tileSize;
+        const { posX: worldX, posY: worldY } = this.getHexPosition(ship.visualPosition.x, ship.visualPosition.y);
         existing.position.set(worldX, worldY);
         existing.rotation = ship.rotation;
         existing.visible = true;

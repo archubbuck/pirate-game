@@ -15,13 +15,24 @@ interface IslandBounds {
 
 export class PixiIslands {
   private container: PIXI.Container;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
   private islandGraphics: Map<string, PIXI.Container> = new Map();
   private islandBounds: Map<string, IslandBounds> = new Map();
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
     parent.addChild(this.container);
+    
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
+  }
+
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
   }
 
   private createIsland(island: Island) {
@@ -32,10 +43,8 @@ export class PixiIslands {
     const maxX = Math.max(...island.positions.map(p => p.x));
     const maxY = Math.max(...island.positions.map(p => p.y));
     
-    const worldMinX = minX * this.tileSize;
-    const worldMaxX = (maxX + 1) * this.tileSize;
-    const worldMinY = minY * this.tileSize;
-    const worldMaxY = (maxY + 1) * this.tileSize;
+    const { posX: worldMinX, posY: worldMinY } = this.getHexPosition(minX, minY);
+    const { posX: worldMaxX, posY: worldMaxY } = this.getHexPosition(maxX + 1, maxY + 1);
     
     this.islandBounds.set(island.id, {
       minX,
@@ -51,21 +60,20 @@ export class PixiIslands {
     const grassShades = [0x2d5016, 0x3a6120, 0x2a4e14, 0x35581c, 0x2f5318];
     
     island.positions.forEach(pos => {
-      const localX = (pos.x - minX) * this.tileSize;
-      const localY = (pos.y - minY) * this.tileSize;
+      const { posX: localPosX, posY: localPosY } = this.getHexPosition(pos.x - minX, pos.y - minY);
       
       const tileGraphics = new PIXI.Graphics();
       
       const grassColor = grassShades[Math.floor(Math.random() * grassShades.length)];
-      tileGraphics.rect(localX, localY, this.tileSize - 2, this.tileSize - 2);
+      tileGraphics.rect(localPosX, localPosY, this.hexWidth - 2, this.hexHeight - 2);
       tileGraphics.fill({ color: grassColor });
       
-      tileGraphics.rect(localX, localY, this.tileSize - 2, this.tileSize - 2);
+      tileGraphics.rect(localPosX, localPosY, this.hexWidth - 2, this.hexHeight - 2);
       tileGraphics.stroke({ color: 0x4a7a2a, width: 1.5 });
       
       if (Math.random() > 0.7) {
-        const treeX = localX + 10 + Math.random() * 15;
-        const treeY = localY + 10 + Math.random() * 15;
+        const treeX = localPosX + 10 + Math.random() * 15;
+        const treeY = localPosY + 10 + Math.random() * 15;
         
         tileGraphics.rect(treeX - 2, treeY - 8, 4, 8);
         tileGraphics.fill({ color: 0x5d4037 });
@@ -73,8 +81,8 @@ export class PixiIslands {
         tileGraphics.circle(treeX, treeY - 8, 6);
         tileGraphics.fill({ color: 0x1b5e20 });
       } else if (Math.random() > 0.6) {
-        const rockX = localX + 8 + Math.random() * 20;
-        const rockY = localY + 8 + Math.random() * 20;
+        const rockX = localPosX + 8 + Math.random() * 20;
+        const rockY = localPosY + 8 + Math.random() * 20;
         
         tileGraphics.circle(rockX, rockY, 3 + Math.random() * 3);
         tileGraphics.fill({ color: 0x616161 });
@@ -84,8 +92,7 @@ export class PixiIslands {
       islandContainer.addChild(tileGraphics);
     });
     
-    const worldX = minX * this.tileSize;
-    const worldY = minY * this.tileSize;
+    const { posX: worldX, posY: worldY } = this.getHexPosition(minX, minY);
     islandContainer.position.set(worldX, worldY);
     
     islandContainer.eventMode = 'static';

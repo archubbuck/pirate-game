@@ -4,12 +4,23 @@ import type { PixiCamera } from "./PixiCamera";
 
 export class PixiCollectibles {
   private container: PIXI.Container;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
+  private hexWidth: number;
+  private hexHeight: number;
   private collectibleGraphics: Map<string, PIXI.Container> = new Map();
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
     parent.addChild(this.container);
+    
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
+  }
+
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
   }
 
   private createCollectible(collectible: Collectible) {
@@ -29,8 +40,7 @@ export class PixiCollectibles {
 
     collectibleContainer.addChild(graphics);
 
-    const posX = collectible.position.x * this.tileSize + this.tileSize / 2;
-    const posY = collectible.position.y * this.tileSize + this.tileSize / 2;
+    const { posX, posY } = this.getHexPosition(collectible.position.x, collectible.position.y);
     collectibleContainer.position.set(posX, posY);
 
     this.container.addChild(collectibleContainer);
@@ -38,8 +48,7 @@ export class PixiCollectibles {
   }
 
   private isInViewport(collectible: Collectible, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const worldX = collectible.position.x * this.tileSize;
-    const worldY = collectible.position.y * this.tileSize;
+    const { posX: worldX, posY: worldY } = this.getHexPosition(collectible.position.x, collectible.position.y);
     
     return worldX >= bounds.minX && worldX <= bounds.maxX &&
            worldY >= bounds.minY && worldY <= bounds.maxY;

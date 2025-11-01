@@ -5,19 +5,24 @@ import type { PixiCamera } from "./PixiCamera";
 export class PixiTerrain {
   private container: PIXI.Container;
   private tileContainer: PIXI.Container;
-  private tileSize: number = 40;
+  private hexSize: number = 24;
   private tileGraphics: Map<string, { tile: PIXI.Graphics; border: PIXI.Graphics }> = new Map();
   private lastExploredState: Map<string, boolean> = new Map();
   private tileColors: Map<string, number> = new Map();
-  private waterShades = [0x0a3d52, 0x0b4058, 0x09384d, 0x0c4560, 0x0d4a68, 0x083449, 0x0e4d6b];
+  private waterShades = [0x1e7ba5, 0x2685ad, 0x2a8fb5, 0x1f7ca8, 0x22809d, 0x2588b0, 0x1a719f];
   private viewportMargin: number = 2;
   private destroyMargin: number = 10;
+  private hexWidth: number;
+  private hexHeight: number;
 
   constructor(parent: PIXI.Container) {
     this.container = new PIXI.Container();
     this.tileContainer = new PIXI.Container();
     this.container.addChild(this.tileContainer);
     parent.addChild(this.container);
+    
+    this.hexWidth = Math.sqrt(3) * this.hexSize;
+    this.hexHeight = 2 * this.hexSize;
     
     this.initializeTileColors();
   }
@@ -34,6 +39,23 @@ export class PixiTerrain {
     }
   }
 
+  private getHexPosition(x: number, y: number): { posX: number; posY: number } {
+    const posX = x * this.hexWidth + (y % 2) * (this.hexWidth / 2);
+    const posY = y * (this.hexHeight * 0.75);
+    return { posX, posY };
+  }
+
+  private drawHexagon(graphics: PIXI.Graphics, centerX: number, centerY: number) {
+    const points: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i;
+      const x = centerX + this.hexSize * Math.cos(angle);
+      const y = centerY + this.hexSize * Math.sin(angle);
+      points.push(x, y);
+    }
+    graphics.poly(points);
+  }
+
   private createTile(x: number, y: number, tile: any) {
     const key = `${x}-${y}`;
     
@@ -44,11 +66,10 @@ export class PixiTerrain {
     const tileGraphic = new PIXI.Graphics();
     const borderGraphic = new PIXI.Graphics();
 
-    const posX = x * this.tileSize;
-    const posY = y * this.tileSize;
+    const { posX, posY } = this.getHexPosition(x, y);
 
-    tileGraphic.position.set(posX, posY);
-    borderGraphic.position.set(posX, posY);
+    tileGraphic.position.set(0, 0);
+    borderGraphic.position.set(0, 0);
 
     this.tileContainer.addChild(tileGraphic);
     this.tileContainer.addChild(borderGraphic);
@@ -84,16 +105,17 @@ export class PixiTerrain {
     if (!graphics) return;
 
     const { tile: tileGraphic, border: borderGraphic } = graphics;
+    const { posX, posY } = this.getHexPosition(x, y);
 
-    const baseColor = this.tileColors.get(key) || 0x0a4d68;
+    const baseColor = this.tileColors.get(key) || 0x2685ad;
 
     tileGraphic.clear();
-    tileGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
+    this.drawHexagon(tileGraphic, posX, posY);
     tileGraphic.fill({ color: baseColor, alpha: 1 });
 
     borderGraphic.clear();
-    borderGraphic.rect(0, 0, this.tileSize - 2, this.tileSize - 2);
-    borderGraphic.stroke({ color: 0x8a8a8a, width: 1, alpha: 0.7 });
+    this.drawHexagon(borderGraphic, posX, posY);
+    borderGraphic.stroke({ color: 0x1a5a7a, width: 1.5, alpha: 0.5 });
   }
 
   public update(camera?: PixiCamera) {
@@ -107,15 +129,15 @@ export class PixiTerrain {
 
     const bounds = camera.getViewportBounds();
     
-    const minTileX = Math.max(0, Math.floor(bounds.minX / this.tileSize) - this.viewportMargin);
-    const maxTileX = Math.min(gridSize - 1, Math.ceil(bounds.maxX / this.tileSize) + this.viewportMargin);
-    const minTileY = Math.max(0, Math.floor(bounds.minY / this.tileSize) - this.viewportMargin);
-    const maxTileY = Math.min(gridSize - 1, Math.ceil(bounds.maxY / this.tileSize) + this.viewportMargin);
+    const minTileX = Math.max(0, Math.floor(bounds.minX / this.hexWidth) - this.viewportMargin);
+    const maxTileX = Math.min(gridSize - 1, Math.ceil(bounds.maxX / this.hexWidth) + this.viewportMargin);
+    const minTileY = Math.max(0, Math.floor(bounds.minY / (this.hexHeight * 0.75)) - this.viewportMargin);
+    const maxTileY = Math.min(gridSize - 1, Math.ceil(bounds.maxY / (this.hexHeight * 0.75)) + this.viewportMargin);
 
-    const destroyMinTileX = Math.max(0, Math.floor(bounds.minX / this.tileSize) - this.destroyMargin);
-    const destroyMaxTileX = Math.min(gridSize - 1, Math.ceil(bounds.maxX / this.tileSize) + this.destroyMargin);
-    const destroyMinTileY = Math.max(0, Math.floor(bounds.minY / this.tileSize) - this.destroyMargin);
-    const destroyMaxTileY = Math.min(gridSize - 1, Math.ceil(bounds.maxY / this.tileSize) + this.destroyMargin);
+    const destroyMinTileX = Math.max(0, Math.floor(bounds.minX / this.hexWidth) - this.destroyMargin);
+    const destroyMaxTileX = Math.min(gridSize - 1, Math.ceil(bounds.maxX / this.hexWidth) + this.destroyMargin);
+    const destroyMinTileY = Math.max(0, Math.floor(bounds.minY / (this.hexHeight * 0.75)) - this.destroyMargin);
+    const destroyMaxTileY = Math.min(gridSize - 1, Math.ceil(bounds.maxY / (this.hexHeight * 0.75)) + this.destroyMargin);
 
     const visibleTileKeys = new Set<string>();
     
@@ -158,6 +180,10 @@ export class PixiTerrain {
         }
       }
     });
+  }
+
+  public getHexPositionForPlayer(x: number, y: number): { posX: number; posY: number } {
+    return this.getHexPosition(x, y);
   }
 
   public destroy() {
