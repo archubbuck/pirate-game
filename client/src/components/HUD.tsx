@@ -16,9 +16,6 @@ export function HUD() {
   const currency = useGameStore((state) => state.currency);
   const getCargoCount = useGameStore((state) => state.getCargoCount);
   const getMaxCargo = useGameStore((state) => state.getMaxCargo);
-  const isCollecting = useGameStore((state) => state.isCollecting);
-  const collectionStartTime = useGameStore((state) => state.collectionStartTime);
-  const collectionDuration = useGameStore((state) => state.collectionDuration);
   const travelStartTime = useGameStore((state) => state.travelStartTime);
   const travelDuration = useGameStore((state) => state.travelDuration);
   const isMoving = useGameStore((state) => state.isMoving);
