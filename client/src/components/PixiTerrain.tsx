@@ -150,11 +150,8 @@ export class PixiTerrain {
       return;
     }
 
-    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
-    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 720;
-    const maxDimension = Math.max(screenWidth, screenHeight);
-    const effectiveHexWidth = this.hexWidth * zoomLevel;
-    const hexViewRadius = Math.ceil((maxDimension / effectiveHexWidth) * 0.8) + 3;
+    // Fixed 10-tile hexagonal radius around player with distance-based lighting
+    const hexViewRadius = 10;
     const hexDestroyRadius = hexViewRadius + 6;
     
     const centerX = player.position.x;
