@@ -3,27 +3,21 @@ import { useState, useEffect } from "react";
 
 export function ActivityPanel() {
   const isMoving = useGameStore((state) => state.isMoving);
-  const isCollecting = useGameStore((state) => state.isCollecting);
   const travelStartTime = useGameStore((state) => state.travelStartTime);
   const travelDuration = useGameStore((state) => state.travelDuration);
-  const collectionStartTime = useGameStore((state) => state.collectionStartTime);
-  const collectionDuration = useGameStore((state) => state.collectionDuration);
   const combatState = useGameStore((state) => state.combatState);
-  const collectingItemId = useGameStore((state) => state.collectingItemId);
-  const collectibles = useGameStore((state) => state.collectibles);
-  const shipUpgrades = useGameStore((state) => state.shipUpgrades);
   
   const [, setTick] = useState(0);
   
   useEffect(() => {
-    if (!isMoving && !isCollecting && !combatState.isInCombat) return;
+    if (!isMoving && !combatState.isInCombat) return;
     
     const interval = setInterval(() => {
       setTick(t => t + 1);
     }, 100);
     
     return () => clearInterval(interval);
-  }, [isMoving, isCollecting, combatState.isInCombat]);
+  }, [isMoving, combatState.isInCombat]);
 
   const getTravelProgress = () => {
     if (!isMoving || !travelStartTime || !travelDuration) return 0;
@@ -38,19 +32,6 @@ export function ActivityPanel() {
     return remaining / 1000;
   };
 
-  const getCollectionProgress = () => {
-    if (!isCollecting || !collectionStartTime || !collectionDuration) return 0;
-    const elapsed = Date.now() - collectionStartTime;
-    return Math.min(100, (elapsed / collectionDuration) * 100);
-  };
-
-  const getCollectionTimeRemaining = () => {
-    if (!isCollecting || !collectionStartTime || !collectionDuration) return 0;
-    const elapsed = Date.now() - collectionStartTime;
-    const remaining = Math.max(0, collectionDuration - elapsed);
-    return remaining / 1000;
-  };
-
   const getCombatProgress = () => {
     return combatState.combatProgress;
   };
@@ -62,7 +43,7 @@ export function ActivityPanel() {
     return remaining / 1000;
   };
 
-  const hasActivity = isMoving || isCollecting || combatState.isInCombat;
+  const hasActivity = isMoving || combatState.isInCombat;
 
   if (!hasActivity) return null;
 
@@ -89,41 +70,6 @@ export function ActivityPanel() {
           </div>
         </div>
       )}
-
-      {isCollecting && collectingItemId && (() => {
-        const collectible = collectibles.find(c => c.id === collectingItemId);
-        if (!collectible) return null;
-        
-        const resourceIcons: Record<string, string> = {
-          timber: "🪵",
-          alloy: "⚙️",
-          circuit: "⚡",
-          biofiber: "🌿",
-        };
-        
-        const richnessStars = "★".repeat(collectible.richness);
-        
-        return (
-          <div className="space-y-1 bg-stone-900/50 rounded px-2 py-1 border border-stone-950/50">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-green-300 flex items-center gap-1">
-                <span className="animate-pulse">{resourceIcons[collectible.type]}</span>
-                <span>Collecting</span>
-              </span>
-              <span className="font-mono text-amber-200 font-bold">{getCollectionTimeRemaining().toFixed(1)}s</span>
-            </div>
-            <div className="text-xxs text-gray-400 px-1" style={{ fontSize: '9px' }}>
-              {richnessStars} Rig ×{shipUpgrades.salvageRig}
-            </div>
-            <div className="w-full h-1.5 bg-black/60 rounded border border-stone-950/50 overflow-hidden" style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.8)' }}>
-              <div
-                className="h-full bg-gradient-to-r from-green-600 to-emerald-500 transition-all duration-100"
-                style={{ width: `${getCollectionProgress()}%` }}
-              />
-            </div>
-          </div>
-        );
-      })()}
 
       {combatState.isInCombat && (
         <div className="space-y-1 bg-stone-900/50 rounded px-2 py-1 border border-stone-950/50">
