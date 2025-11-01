@@ -23,6 +23,14 @@ export class PixiArtifacts {
     return { posX, posY };
   }
 
+  private getHexDistance(x1: number, y1: number, x2: number, y2: number): number {
+    const q1 = x1 - Math.floor(y1 / 2);
+    const r1 = y1;
+    const q2 = x2 - Math.floor(y2 / 2);
+    const r2 = y2;
+    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
+  }
+
   private createArtifact(artifact: Artifact) {
     const artifactContainer = new PIXI.Container();
     
@@ -46,22 +54,22 @@ export class PixiArtifacts {
     this.artifactGraphics.set(artifact.id, artifactContainer);
   }
 
-  private isInViewport(artifact: Artifact, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const { posX: worldX, posY: worldY } = this.getHexPosition(artifact.position.x, artifact.position.y);
-    
-    return worldX >= bounds.minX && worldX <= bounds.maxX &&
-           worldY >= bounds.minY && worldY <= bounds.maxY;
-  }
-
   public update(camera?: PixiCamera) {
     const artifacts = useGameStore.getState().artifacts;
-    const bounds = camera?.getViewportBounds();
+    const player = useGameStore.getState().player;
+    const viewRange = 10;
 
     const uncollectedArtifacts = artifacts.filter(artifact => !artifact.isCollected);
     
-    const visibleArtifacts = bounds
-      ? uncollectedArtifacts.filter(artifact => this.isInViewport(artifact, bounds))
-      : uncollectedArtifacts;
+    const visibleArtifacts = uncollectedArtifacts.filter(artifact => {
+      const distance = this.getHexDistance(
+        artifact.position.x,
+        artifact.position.y,
+        player.position.x,
+        player.position.y
+      );
+      return distance <= viewRange;
+    });
 
     const currentIds = new Set(uncollectedArtifacts.map(a => a.id));
     

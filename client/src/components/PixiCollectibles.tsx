@@ -23,6 +23,14 @@ export class PixiCollectibles {
     return { posX, posY };
   }
 
+  private getHexDistance(x1: number, y1: number, x2: number, y2: number): number {
+    const q1 = x1 - Math.floor(y1 / 2);
+    const r1 = y1;
+    const q2 = x2 - Math.floor(y2 / 2);
+    const r2 = y2;
+    return (Math.abs(q1 - q2) + Math.abs(r1 - r2) + Math.abs((q1 + r1) - (q2 + r2))) / 2;
+  }
+
   private createCollectible(collectible: Collectible) {
     const collectibleContainer = new PIXI.Container();
     
@@ -47,20 +55,20 @@ export class PixiCollectibles {
     this.collectibleGraphics.set(collectible.id, collectibleContainer);
   }
 
-  private isInViewport(collectible: Collectible, bounds: { minX: number; maxX: number; minY: number; maxY: number }): boolean {
-    const { posX: worldX, posY: worldY } = this.getHexPosition(collectible.position.x, collectible.position.y);
-    
-    return worldX >= bounds.minX && worldX <= bounds.maxX &&
-           worldY >= bounds.minY && worldY <= bounds.maxY;
-  }
-
   public update(camera?: PixiCamera) {
     const collectibles = useGameStore.getState().collectibles;
-    const bounds = camera?.getViewportBounds();
+    const player = useGameStore.getState().player;
+    const viewRange = 10;
 
-    const visibleCollectibles = bounds
-      ? collectibles.filter(collectible => this.isInViewport(collectible, bounds))
-      : collectibles;
+    const visibleCollectibles = collectibles.filter(collectible => {
+      const distance = this.getHexDistance(
+        collectible.position.x,
+        collectible.position.y,
+        player.position.x,
+        player.position.y
+      );
+      return distance <= viewRange;
+    });
 
     const currentIds = new Set(collectibles.map(c => c.id));
     
