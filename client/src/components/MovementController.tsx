@@ -108,8 +108,6 @@ function findPath(start: Position, end: Position, gridSize: number, tiles: any[]
 export function MovementController() {
   const player = useGameStore((state) => state.player);
   const targetPosition = useGameStore((state) => state.targetPosition);
-  const currentPath = useGameStore((state) => state.currentPath);
-  const isMoving = useGameStore((state) => state.isMoving);
   const isCollecting = useGameStore((state) => state.isCollecting);
   const gridSize = useGameStore((state) => state.gridSize);
   const tiles = useGameStore((state) => state.tiles);
@@ -141,14 +139,19 @@ export function MovementController() {
   
   useEffect(() => {
     if (targetPosition && !isCollecting) {
+      const state = useGameStore.getState();
+      const currentIsMoving = state.isMoving;
+      const currentPath = state.currentPath;
+      const currentVisualPosition = state.player.visualPosition;
+      
       let pathStart = player.position;
       
-      if (isMoving && currentPath.length > 0) {
+      if (currentIsMoving && currentPath.length > 0) {
         pathStart = currentPath[0];
         
         rerouteStart.current = {
-          x: player.visualPosition.x,
-          y: player.visualPosition.y
+          x: currentVisualPosition.x,
+          y: currentVisualPosition.y
         };
         
         const nextTile = currentPath[0];
@@ -156,8 +159,8 @@ export function MovementController() {
         const dy_full = nextTile.y - player.position.y;
         const fullDistance = Math.sqrt(dx_full * dx_full + dy_full * dy_full);
         
-        const dx_remaining = nextTile.x - player.visualPosition.x;
-        const dy_remaining = nextTile.y - player.visualPosition.y;
+        const dx_remaining = nextTile.x - currentVisualPosition.x;
+        const dy_remaining = nextTile.y - currentVisualPosition.y;
         const remainingDistance = Math.sqrt(dx_remaining * dx_remaining + dy_remaining * dy_remaining);
         
         const remainingFraction = remainingDistance / fullDistance;
@@ -171,13 +174,13 @@ export function MovementController() {
       if (path.length > 0) {
         let finalPath = path;
         
-        if (isMoving && currentPath.length > 0) {
+        if (currentIsMoving && currentPath.length > 0) {
           finalPath = [currentPath[0], ...path];
         }
         
         const distance = finalPath.length;
         const travelTime = getTravelTime(distance);
-        if (isMoving) {
+        if (currentIsMoving) {
           console.log(`Path recalculated with ${finalPath.length} steps, ETA: ${(travelTime / 1000).toFixed(1)}s`);
         } else {
           console.log(`Path found with ${finalPath.length} steps, ETA: ${(travelTime / 1000).toFixed(1)}s`);
@@ -192,7 +195,7 @@ export function MovementController() {
         setTargetPosition(null);
       }
     }
-  }, [targetPosition, player.position, isMoving, currentPath, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
+  }, [targetPosition, player.position, isCollecting, gridSize, tiles, setPath, setIsMoving, setTargetPosition, highlightPath, getTravelTime, startTravel]);
   
   useEffect(() => {
     let animationFrameId: number;
@@ -292,7 +295,7 @@ export function MovementController() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isMoving, isCollecting, collectionStartTime, collectionDuration, currentPath, player, updateVisualPosition, setPlayerRotation, updatePlayerPosition, setPath, setIsMoving, clearHighlights, collectArtifact, startCollection, getEstimatedCollectionTime, highlightPath, completeCollection, artifacts, collectibles]);
+  }, [isCollecting, collectionStartTime, collectionDuration, player, updateVisualPosition, setPlayerRotation, updatePlayerPosition, setPath, setIsMoving, clearHighlights, collectArtifact, startCollection, getEstimatedCollectionTime, highlightPath, completeCollection, artifacts, collectibles]);
   
   return null;
 }
