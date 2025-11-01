@@ -223,6 +223,11 @@ interface GameState {
   getCargoCount: () => number;
   getMaxCargo: () => number;
   getCurrency: () => Record<string, number>;
+  
+  deployCrewMember: (position: Position, collectibleId: string) => void;
+  retrieveCrewMember: (crewId: string) => void;
+  updateCrewMember: (crew: CrewMember) => void;
+  removeCrewMember: (crewId: string) => void;
 }
 
 const GRID_SIZE = 40;
@@ -303,6 +308,23 @@ const createInitialShipUpgrades = (): ShipUpgrade => ({
   salvageRig: 1,
   cargoHold: 1,
 });
+
+const createInitialCrew = (): CrewMember[] => {
+  const crewNames = ["Crew-1", "Crew-2", "Crew-3", "Crew-4"];
+  return crewNames.map(name => ({
+    id: name,
+    position: { x: 20, y: 20 },
+    visualPosition: { x: 20, y: 20 },
+    state: "idle" as CrewState,
+    deployedAt: null,
+    collectingItemId: null,
+    collectionStartTime: null,
+    collectionDuration: null,
+    driftStartTime: null,
+    poachingEnemyId: null,
+    poachStartTime: null,
+  }));
+};
 
 const createIslands = (occupied: Set<string>): Island[] => {
   const islands: Island[] = [];
@@ -495,7 +517,7 @@ export const useGameStore = create<GameState>()(
       combatDuration: 5000,
       combatProgress: 0,
     },
-    crewMembers: [],
+    crewMembers: createInitialCrew(),
     maxCrewCapacity: 6,
     tiles,
     
@@ -574,7 +596,7 @@ export const useGameStore = create<GameState>()(
           combatDuration: 5000,
           combatProgress: 0,
         },
-        crewMembers: [],
+        crewMembers: createInitialCrew(),
         maxCrewCapacity: 6,
         tiles,
         currentPath: [],
@@ -1143,6 +1165,85 @@ export const useGameStore = create<GameState>()(
     
     setZoomLevel: (level: number) => {
       set({ zoomLevel: Math.max(50, Math.min(600, level)) });
+    },
+    
+    deployCrewMember: (position: Position, collectibleId: string) => {
+      const availableCrew = get().crewMembers.filter(c => c.state === "idle");
+      
+      if (availableCrew.length === 0) {
+        console.log("No crew members available for deployment");
+        return;
+      }
+      
+      const crew = availableCrew[0];
+      const updatedCrew: CrewMember = {
+        ...crew,
+        position,
+        visualPosition: { x: position.x, y: position.y },
+        state: "collecting",
+        deployedAt: Date.now(),
+        collectingItemId: collectibleId,
+        collectionStartTime: Date.now(),
+        collectionDuration: 12000,
+      };
+      
+      set(state => ({
+        crewMembers: state.crewMembers.map(c => c.id === crew.id ? updatedCrew : c)
+      }));
+      
+      console.log(`Deployed crew member ${crew.id} to collect at (${position.x}, ${position.y})`);
+      
+      setTimeout(() => {
+        const currentCrew = get().crewMembers.find(c => c.id === crew.id);
+        if (currentCrew && currentCrew.state === "collecting") {
+          get().updateCrewMember({
+            ...currentCrew,
+            state: "awaitingPickup",
+          });
+          console.log(`Crew member ${crew.id} finished collecting, awaiting pickup`);
+        }
+      }, 12000);
+    },
+    
+    retrieveCrewMember: (crewId: string) => {
+      const crew = get().crewMembers.find(c => c.id === crewId);
+      if (!crew || crew.state !== "awaitingPickup") {
+        console.log("Crew member not ready for pickup");
+        return;
+      }
+      
+      if (crew.collectingItemId) {
+        get().collectItem(crew.collectingItemId);
+      }
+      
+      const updatedCrew: CrewMember = {
+        ...crew,
+        state: "idle",
+        position: get().player.position,
+        visualPosition: { x: get().player.position.x, y: get().player.position.y },
+        deployedAt: null,
+        collectingItemId: null,
+        collectionStartTime: null,
+        collectionDuration: null,
+      };
+      
+      set(state => ({
+        crewMembers: state.crewMembers.map(c => c.id === crewId ? updatedCrew : c)
+      }));
+      
+      console.log(`Retrieved crew member ${crewId}`);
+    },
+    
+    updateCrewMember: (crew: CrewMember) => {
+      set(state => ({
+        crewMembers: state.crewMembers.map(c => c.id === crew.id ? crew : c)
+      }));
+    },
+    
+    removeCrewMember: (crewId: string) => {
+      set(state => ({
+        crewMembers: state.crewMembers.filter(c => c.id !== crewId)
+      }));
     },
   };
   })
