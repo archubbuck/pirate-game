@@ -24,7 +24,7 @@ export class PixiLighting {
     this.lightSprite = new PIXI.Sprite(texture);
     this.lightSprite.anchor.set(0.5);
     this.lightSprite.blendMode = 'add';
-    this.lightSprite.alpha = 0.875;
+    this.lightSprite.alpha = 0.595;
     
     this.lightingContainer.addChild(this.lightSprite);
     gameContainer.addChild(this.lightingContainer);
@@ -38,9 +38,9 @@ export class PixiLighting {
     const ctx = canvas.getContext('2d')!;
     
     const gradient = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
-    gradient.addColorStop(0, 'rgba(255, 240, 180, 1.0)');
-    gradient.addColorStop(0.3, 'rgba(255, 230, 150, 0.8)');
-    gradient.addColorStop(0.6, 'rgba(255, 200, 120, 0.5)');
+    gradient.addColorStop(0, 'rgba(255, 235, 170, 0.7)');
+    gradient.addColorStop(0.3, 'rgba(255, 220, 140, 0.65)');
+    gradient.addColorStop(0.6, 'rgba(255, 200, 110, 0.45)');
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
     
     ctx.fillStyle = gradient;
