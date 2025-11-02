@@ -48,16 +48,16 @@ export function HUD() {
   return (
     <>
       {phase === "ready" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
-          <div className="bg-gray-900 border-2 border-blue-700 rounded-lg p-8 max-w-2xl text-center">
-            <h1 className="text-4xl font-bold text-blue-400 mb-2">Watropolis Salvage</h1>
-            <h2 className="text-xl text-gray-400 mb-4">Captain's Log - Year 60 After The Flood</h2>
-            <div className="bg-gray-800 p-4 rounded mb-4 text-left text-sm">
-              <p className="text-gray-300 mb-3">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10 p-4 overflow-y-auto">
+          <div className="bg-gray-900 border-2 border-blue-700 rounded-lg p-4 sm:p-8 max-w-2xl w-full text-center my-auto">
+            <h1 className="text-2xl sm:text-4xl font-bold text-blue-400 mb-2">Watropolis Salvage</h1>
+            <h2 className="text-base sm:text-xl text-gray-400 mb-3 sm:mb-4">Captain's Log - Year 60 After The Flood</h2>
+            <div className="bg-gray-800 p-3 sm:p-4 rounded mb-3 sm:mb-4 text-left text-xs sm:text-sm">
+              <p className="text-gray-300 mb-2 sm:mb-3">
                 Sixty years ago, a series of massive underwater volcanic eruptions accelerated ocean warming, 
                 triggering rapid polar ice cap melting. The world we knew vanished beneath the waves.
               </p>
-              <p className="text-gray-300 mb-3">
+              <p className="text-gray-300 mb-2 sm:mb-3">
                 The Survivors built <span className="text-blue-400 font-bold">Watropolis</span>, a great floating city, 
                 piece by piece from salvaged materials. But our work is not done.
               </p>
@@ -67,7 +67,7 @@ export function HUD() {
               </p>
             </div>
             
-            <div className="bg-gray-800 p-4 rounded mb-6 text-left text-sm">
+            <div className="bg-gray-800 p-3 sm:p-4 rounded mb-4 sm:mb-6 text-left text-xs sm:text-sm">
               <h3 className="text-white font-bold mb-2">Mission Briefing:</h3>
               <ul className="text-gray-300 space-y-1">
                 <li>• Click tiles to sail your vessel</li>
@@ -79,7 +79,7 @@ export function HUD() {
             
             <button
               onClick={start}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 px-6 sm:px-8 rounded-lg text-lg sm:text-xl transition-colors w-full sm:w-auto"
             >
               Launch Vessel
             </button>
