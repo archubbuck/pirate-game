@@ -29,7 +29,7 @@ export class PixiLighting {
     
     this.lightingContainer.visible = true;
     this.lightingContainer.addChild(this.lightSprite);
-    gameContainer.addChild(this.lightingContainer);
+    app.stage.addChild(this.lightingContainer);
   }
 
   private createRadialGradientTexture(radius: number): PIXI.Texture {
@@ -59,12 +59,15 @@ export class PixiLighting {
 
   public update() {
     const player = useGameStore.getState().player;
-    const { posX, posY } = this.getHexPosition(
+    const { posX: playerWorldX, posY: playerWorldY } = this.getHexPosition(
       player.visualPosition.x,
       player.visualPosition.y
     );
     
-    this.lightSprite.position.set(posX, posY);
+    const worldPoint = new PIXI.Point(playerWorldX, playerWorldY);
+    const screenPoint = this.gameContainer.toGlobal(worldPoint);
+    
+    this.lightSprite.position.set(screenPoint.x, screenPoint.y);
   }
 
   public destroy() {
