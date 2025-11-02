@@ -25,7 +25,9 @@ export class PixiLighting {
     this.lightSprite.anchor.set(0.5);
     this.lightSprite.blendMode = 'add';
     this.lightSprite.alpha = 0.595;
+    this.lightSprite.visible = true;
     
+    this.lightingContainer.visible = true;
     this.lightingContainer.addChild(this.lightSprite);
     gameContainer.addChild(this.lightingContainer);
   }
